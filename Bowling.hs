@@ -48,12 +48,7 @@ applyRollToFrame f roll rt = case frameState f of
 			newScore = score f + roll
 			isSpare = (fromJust $ firstRoll f) + roll == maxPins
 			newFrameState = if isSpare then SpareNeedOneMore else Complete
-			rt' = if newFrameState == Complete then
-					case rt of
-						Nothing -> Nothing
-						Just x -> Just (x + newScore)
-				else
-					Nothing
+			rt' = rt >>= (\x -> if newFrameState == Complete then Just (x + newScore) else Nothing)
 			newFrame = f { 
 				frameState = newFrameState, 
 				score = newScore,
@@ -67,9 +62,7 @@ applyRollToFrame f roll rt = case frameState f of
 			thirdRoll = if isLastFrame f then Just roll else Nothing
 			newScore = score f + roll
 			newFrameState = Complete
-			rt' = case rt of
-				Nothing -> Nothing
-				Just x -> Just (x + newScore)
+			rt' = rt >>= (\x -> Just (x + newScore))
 			newFrame = f { 
 				frameState = newFrameState, 
 				score = newScore,
@@ -96,9 +89,7 @@ applyRollToFrame f roll rt = case frameState f of
 			thirdRoll = if isLastFrame f then Just roll else Nothing
 			newScore = score f + roll
 			newFrameState = Complete
-			rt' = case rt of
-				Nothing -> Nothing
-				Just x -> Just (x + newScore)
+			rt' = rt >>= (\x -> Just (x + newScore))
 			newFrame = f { 
 				frameState = newFrameState, 
 				score = newScore,
@@ -108,9 +99,7 @@ applyRollToFrame f roll rt = case frameState f of
 			-- BUG: technically, if this is the last frame, we have consumed this roll.
 			(newFrame, False, rt')
 
-	Complete -> (f, False, case rt of
-		Nothing -> Nothing
-		Just x -> Just (x + (score f)))
+	Complete -> (f, False, rt >>= (\x -> Just (x + score f)))
 
 processRoll :: [Frame] -> Int -> [Frame]
 processRoll fs roll =
