@@ -16,7 +16,7 @@ data FrameState
 data Frame = Frame {
 	frameNumber :: Int,
 	frameState :: FrameState,
-	score :: Int,
+	nextRolls :: [Int],
 	runningTotal :: Maybe Int,
 	firstRoll :: Maybe Int,
 	secondRoll :: Maybe Int,
@@ -29,29 +29,50 @@ isStrike roll = roll == maxPins
 isLastFrame :: Frame -> Bool
 isLastFrame f = frameNumber f == maxFrames
 
+frameScore :: Frame -> Int
+frameScore f =
+	(fromMaybe 0 $ firstRoll f) +
+	(fromMaybe 0 $ secondRoll f) +
+	(fromMaybe 0 $ thirdRoll f) +
+	(sum $ nextRolls f)
+
+formatFrame :: Frame -> String
+formatFrame f =
+	"{ " ++
+	intercalate ", " [
+		(show $ frameNumber f),
+		(show $ frameState f),
+		(show $ nextRolls f),
+		(show $ runningTotal f),
+		(show $ firstRoll f),
+		(show $ secondRoll f),
+		(show $ thirdRoll f)
+	] ++
+	" }"
+
+formatFrames :: [Frame] -> String
+formatFrames fs = intercalate "\n" $ map formatFrame fs
+
 applyRollToFrame :: Frame -> Int -> Maybe Int -> (Frame, Bool, Maybe Int)
 applyRollToFrame f roll rt = case frameState f of
 
 	ReadyForFirstRoll ->
 		let
 			newFrameState = if isStrike roll then StrikeNeedTwoMore else ReadyForSecondRoll
-			newScore = score f + roll
 			newFrame = f { 
 				frameState = newFrameState, 
-				score = newScore,
 				firstRoll = Just roll}
 		in
 			(newFrame, True, Nothing)
 
 	ReadyForSecondRoll ->
 		let
-			newScore = score f + roll
-			isSpare = (fromJust $ firstRoll f) + roll == maxPins
+			newScore = (fromJust $ firstRoll f) + roll
+			isSpare = newScore == maxPins
 			newFrameState = if isSpare then SpareNeedOneMore else Complete
-			rt' = rt >>= (\x -> if newFrameState == Complete then Just (x + newScore) else Nothing)
+			rt' = rt >>= (\x -> if isSpare then Nothing else Just (x + newScore))
 			newFrame = f { 
 				frameState = newFrameState, 
-				score = newScore,
 				runningTotal = rt',
 				secondRoll = Just roll}
 		in
@@ -61,12 +82,13 @@ applyRollToFrame f roll rt = case frameState f of
 		let
 			consumedBall = isLastFrame f
 			thirdRoll = if consumedBall then Just roll else Nothing
-			newScore = score f + roll
+			newNextRolls = [roll]
+			newScore = maxPins + sum newNextRolls
 			newFrameState = Complete
 			rt' = rt >>= (\x -> Just (x + newScore))
 			newFrame = f { 
 				frameState = newFrameState, 
-				score = newScore,
+				nextRolls = newNextRolls,
 				runningTotal = rt',
 				thirdRoll = thirdRoll}
 		in
@@ -76,11 +98,12 @@ applyRollToFrame f roll rt = case frameState f of
 		let
 			consumedBall = isLastFrame f
 			secondRoll = if consumedBall then Just roll else Nothing
-			newScore = score f + roll
+			newNextRolls = [roll]
+			newScore = maxPins + sum newNextRolls
 			newFrameState = StrikeNeedOneMore
 			newFrame = f { 
 				frameState = newFrameState, 
-				score = newScore,
+				nextRolls = newNextRolls,
 				secondRoll = secondRoll}
 		in
 			(newFrame, consumedBall, Nothing)
@@ -89,18 +112,19 @@ applyRollToFrame f roll rt = case frameState f of
 		let
 			consumedBall = isLastFrame f
 			thirdRoll = if consumedBall then Just roll else Nothing
-			newScore = score f + roll
+			newNextRolls = (nextRolls f) ++ [roll]
+			newScore = maxPins + sum newNextRolls
 			newFrameState = Complete
 			rt' = rt >>= (\x -> Just (x + newScore))
 			newFrame = f { 
 				frameState = newFrameState, 
-				score = newScore,
+				nextRolls = newNextRolls,
 				runningTotal = rt',
 				thirdRoll = thirdRoll}
 		in
 			(newFrame, consumedBall, rt')
 
-	Complete -> (f, False, rt >>= (\x -> Just (x + score f)))
+	Complete -> (f, False, rt >>= (\x -> Just (x + frameScore f)))
 
 processRoll :: [Frame] -> Int -> [Frame]
 processRoll fs roll =
@@ -117,6 +141,9 @@ processRoll fs roll =
 processRolls :: [Int] -> [Frame]
 processRolls rolls =
 	let
-		fs = [Frame fn ReadyForFirstRoll 0 Nothing Nothing Nothing Nothing | fn <- [1..maxFrames]]
+		fs = [Frame fn ReadyForFirstRoll [] Nothing Nothing Nothing Nothing | fn <- [1..maxFrames]]
 	in
 		foldl (\fs' roll -> processRoll fs' roll) fs rolls
+
+main = do
+	putStrLn $ formatFrames $ processRolls $ replicate 12 10
