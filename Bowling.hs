@@ -1,5 +1,5 @@
-import Data.Maybe
 import Data.List
+import Data.Maybe
 
 maxPins = 10
 maxFrames = 10
@@ -13,23 +13,18 @@ data FrameState
 	| Complete
 	deriving (Eq, Show)
 
-data Roll = Roll {
-	value :: Int,
-	isSpare :: Bool}
-	deriving Show
-
-isStrike :: Roll -> Bool
-isStrike roll = value roll == maxPins
-
 data Frame = Frame {
 	frameNumber :: Int,
 	frameState :: FrameState,
 	score :: Int,
 	runningTotal :: Maybe Int,
-	firstRoll :: Maybe Roll,
-	secondRoll :: Maybe Roll,
-	thirdRoll :: Maybe Roll}
+	firstRoll :: Maybe Int,
+	secondRoll :: Maybe Int,
+	thirdRoll :: Maybe Int}
 	deriving Show
+
+isStrike :: Int -> Bool
+isStrike roll = roll == maxPins
 
 isLastFrame :: Frame -> Bool
 isLastFrame f = frameNumber f == maxFrames
@@ -39,21 +34,19 @@ applyRollToFrame f roll rt = case frameState f of
 
 	ReadyForFirstRoll ->
 		let
-			newRoll = Roll roll False
-			newFrameState = if isStrike newRoll then StrikeNeedTwoMore else ReadyForSecondRoll
+			newFrameState = if isStrike roll then StrikeNeedTwoMore else ReadyForSecondRoll
 			newScore = score f + roll
 			newFrame = f { 
 				frameState = newFrameState, 
 				score = newScore,
-				firstRoll = Just newRoll}
+				firstRoll = Just roll}
 		in
 			(newFrame, True, Nothing)
 
 	ReadyForSecondRoll ->
 		let
-			isSpare = (value $ fromJust $ firstRoll f) + roll == maxPins
-			newRoll = Roll roll isSpare
 			newScore = score f + roll
+			isSpare = (fromJust $ firstRoll f) + roll == maxPins
 			newFrameState = if isSpare then SpareNeedOneMore else Complete
 			rt' = if newFrameState == Complete then
 					case rt of
@@ -65,13 +58,13 @@ applyRollToFrame f roll rt = case frameState f of
 				frameState = newFrameState, 
 				score = newScore,
 				runningTotal = rt',
-				secondRoll = Just newRoll}
+				secondRoll = Just roll}
 		in
 			(newFrame, True, rt')
 
 	SpareNeedOneMore ->
 		let
-			newRoll = if isLastFrame f then Just (Roll roll False) else Nothing
+			thirdRoll = if isLastFrame f then Just roll else Nothing
 			newScore = score f + roll
 			newFrameState = Complete
 			rt' = case rt of
@@ -81,26 +74,26 @@ applyRollToFrame f roll rt = case frameState f of
 				frameState = newFrameState, 
 				score = newScore,
 				runningTotal = rt',
-				thirdRoll = newRoll}
+				thirdRoll = thirdRoll}
 		in
 			-- BUG: technically, if this is the last frame, we have consumed this roll.
 			(newFrame, False, rt')
 
 	StrikeNeedTwoMore ->
 		let
-			newRoll = if isLastFrame f then Just (Roll roll False) else Nothing
+			secondRoll = if isLastFrame f then Just roll else Nothing
 			newScore = score f + roll
 			newFrameState = StrikeNeedOneMore
 			newFrame = f { 
 				frameState = newFrameState, 
 				score = newScore,
-				secondRoll = newRoll}
+				secondRoll = secondRoll}
 		in
 			(newFrame, False, Nothing)
 
 	StrikeNeedOneMore ->
 		let
-			newRoll = if isLastFrame f then Just (Roll roll False) else Nothing
+			thirdRoll = if isLastFrame f then Just roll else Nothing
 			newScore = score f + roll
 			newFrameState = Complete
 			rt' = case rt of
@@ -110,7 +103,7 @@ applyRollToFrame f roll rt = case frameState f of
 				frameState = newFrameState, 
 				score = newScore,
 				runningTotal = rt',
-				thirdRoll = newRoll}
+				thirdRoll = thirdRoll}
 		in
 			-- BUG: technically, if this is the last frame, we have consumed this roll.
 			(newFrame, False, rt')
