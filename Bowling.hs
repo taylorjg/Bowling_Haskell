@@ -1,6 +1,9 @@
 import Data.Maybe
 import Data.List
 
+maxPins = 10
+maxFrames = 10
+
 data FrameState
 	= ReadyForFirstRoll
 	| ReadyForSecondRoll
@@ -16,7 +19,7 @@ data Roll = Roll {
 	deriving Show
 
 isStrike :: Roll -> Bool
-isStrike roll = value roll == 10
+isStrike roll = value roll == maxPins
 
 data Frame = Frame {
 	frameNumber :: Int,
@@ -29,7 +32,7 @@ data Frame = Frame {
 	deriving Show
 
 isLastFrame :: Frame -> Bool
-isLastFrame f = frameNumber f == 10
+isLastFrame f = frameNumber f == maxFrames
 
 applyRollToFrame :: Frame -> Int -> Maybe Int -> (Frame, Bool, Maybe Int)
 applyRollToFrame f roll rt = case frameState f of
@@ -48,7 +51,7 @@ applyRollToFrame f roll rt = case frameState f of
 
 	ReadyForSecondRoll ->
 		let
-			isSpare = (value $ fromJust $ firstRoll f) + roll == 10
+			isSpare = (value $ fromJust $ firstRoll f) + roll == maxPins
 			newRoll = Roll roll isSpare
 			newScore = score f + roll
 			newFrameState = if isSpare then SpareNeedOneMore else Complete
@@ -80,6 +83,7 @@ applyRollToFrame f roll rt = case frameState f of
 				runningTotal = rt',
 				thirdRoll = newRoll}
 		in
+			-- BUG: technically, if this is the last frame, we have consumed this roll.
 			(newFrame, False, rt')
 
 	StrikeNeedTwoMore ->
@@ -106,8 +110,9 @@ applyRollToFrame f roll rt = case frameState f of
 				frameState = newFrameState, 
 				score = newScore,
 				runningTotal = rt',
-				secondRoll = newRoll}
+				thirdRoll = newRoll}
 		in
+			-- BUG: technically, if this is the last frame, we have consumed this roll.
 			(newFrame, False, rt')
 
 	Complete -> (f, False, case rt of
@@ -116,9 +121,9 @@ applyRollToFrame f roll rt = case frameState f of
 
 processRoll :: [Frame] -> Int -> [Frame]
 processRoll fs roll =
-	reverse $ (\(a,b,c) -> a) $ foldl doIt ([], False, Just 0) fs
+	reverse $ (\(a,b,c) -> a) $ foldl op ([], False, Just 0) fs
 	where
-		doIt (fs', bail, rt) f =
+		op (fs', bail, rt) f =
 			if bail then
 				(f : fs', bail, rt)
 			else
@@ -129,6 +134,6 @@ processRoll fs roll =
 processRolls :: [Int] -> [Frame]
 processRolls rolls =
 	let
-		fs = [Frame fn ReadyForFirstRoll 0 Nothing Nothing Nothing Nothing | fn <- [1..10]]
+		fs = [Frame fn ReadyForFirstRoll 0 Nothing Nothing Nothing Nothing | fn <- [1..maxFrames]]
 	in
 		foldl (\fs' roll -> processRoll fs' roll) fs rolls
