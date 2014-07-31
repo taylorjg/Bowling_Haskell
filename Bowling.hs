@@ -1,4 +1,5 @@
 import Data.Maybe
+import Data.List
 
 data FrameState
 	= ReadyForFirstRoll
@@ -49,7 +50,7 @@ applyRollToFrame f roll = case frameState f of
 
 	ReadyForSecondRoll ->
 		let
-			isSpare = (value $ fromJust $ firstRoll f) == 10
+			isSpare = (value $ fromJust $ firstRoll f) + roll == 10
 			newRoll = Roll roll isSpare
 			newScore = score f + roll
 			newFrameState = if isSpare then SpareNeedOneMore else Complete
@@ -99,19 +100,22 @@ applyRollToFrame f roll = case frameState f of
 	Complete -> (f, False)
 
 
+processRoll :: [Frame] -> Int -> [Frame]
+processRoll fs roll =
+	reverse $ fst $ foldl doIt ([], False) fs
+	where
+		doIt (fs', bail) f =
+			if bail then
+				(f : fs', True)
+			else
+				(f' : fs', bail')
+			where
+				(f', bail') = applyRollToFrame f roll
+
 processRolls :: [Int] -> [Frame]
 processRolls rolls =
 	let
-		fs = [Frame n ReadyForFirstRoll 0 Nothing Nothing Nothing | n <- [1..10]]
+		fs = [Frame fn ReadyForFirstRoll 0 Nothing Nothing Nothing | fn <- [1..10]]
 	in
-		reverse $ fst $ foldl doIt ([], False) fs
-		where
-			doIt (accfs, accb) f =
-				let
-					roll = head rolls
-					(f', b') = applyRollToFrame f roll
-				in
-					if accb then (f : accfs, accb) else (f' : accfs, b')
-
-
+		foldl (\fs' r -> processRoll fs' r) fs rolls
 
