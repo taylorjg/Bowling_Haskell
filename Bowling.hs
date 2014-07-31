@@ -22,6 +22,7 @@ data Frame = Frame {
 	frameNumber :: Int,
 	frameState :: FrameState,
 	score :: Int,
+	runningTotal :: Maybe Int,
 	firstRoll :: Maybe Roll,
 	secondRoll :: Maybe Roll,
 	thirdRoll :: Maybe Roll}
@@ -30,8 +31,8 @@ data Frame = Frame {
 isLastFrame :: Frame -> Bool
 isLastFrame f = frameNumber f == 10
 
-applyRollToFrame :: Frame -> Int -> (Frame, Bool)
-applyRollToFrame f roll = case frameState f of
+applyRollToFrame :: Frame -> Int -> Maybe Int -> (Frame, Bool, Maybe Int)
+applyRollToFrame f roll rt = case frameState f of
 
 	ReadyForFirstRoll ->
 		let
@@ -43,7 +44,7 @@ applyRollToFrame f roll = case frameState f of
 				score = newScore,
 				firstRoll = Just newRoll}
 		in
-			(newFrame, True)
+			(newFrame, True, Nothing)
 
 	ReadyForSecondRoll ->
 		let
@@ -51,24 +52,35 @@ applyRollToFrame f roll = case frameState f of
 			newRoll = Roll roll isSpare
 			newScore = score f + roll
 			newFrameState = if isSpare then SpareNeedOneMore else Complete
+			rt' = if newFrameState == Complete then
+					case rt of
+						Nothing -> Nothing
+						Just x -> Just (x + newScore)
+				else
+					Nothing
 			newFrame = f { 
 				frameState = newFrameState, 
 				score = newScore,
+				runningTotal = rt',
 				secondRoll = Just newRoll}
 		in
-			(newFrame, True)
+			(newFrame, True, rt')
 
 	SpareNeedOneMore ->
 		let
 			newRoll = if isLastFrame f then Just (Roll roll False) else Nothing
 			newScore = score f + roll
 			newFrameState = Complete
+			rt' = case rt of
+				Nothing -> Nothing
+				Just x -> Just (x + newScore)
 			newFrame = f { 
 				frameState = newFrameState, 
 				score = newScore,
+				runningTotal = rt',
 				thirdRoll = newRoll}
 		in
-			(newFrame, False)
+			(newFrame, False, rt')
 
 	StrikeNeedTwoMore ->
 		let
@@ -80,39 +92,43 @@ applyRollToFrame f roll = case frameState f of
 				score = newScore,
 				secondRoll = newRoll}
 		in
-			(newFrame, False)
+			(newFrame, False, Nothing)
 
 	StrikeNeedOneMore ->
 		let
 			newRoll = if isLastFrame f then Just (Roll roll False) else Nothing
 			newScore = score f + roll
 			newFrameState = Complete
+			rt' = case rt of
+				Nothing -> Nothing
+				Just x -> Just (x + newScore)
 			newFrame = f { 
 				frameState = newFrameState, 
 				score = newScore,
+				runningTotal = rt',
 				secondRoll = newRoll}
 		in
-			(newFrame, False)
+			(newFrame, False, rt')
 
-	Complete -> (f, False)
-
+	Complete -> (f, False, case rt of
+		Nothing -> Nothing
+		Just x -> Just (x + (score f)))
 
 processRoll :: [Frame] -> Int -> [Frame]
 processRoll fs roll =
-	reverse $ fst $ foldl doIt ([], False) fs
+	reverse $ (\(a,b,c) -> a) $ foldl doIt ([], False, Just 0) fs
 	where
-		doIt (fs', bail) f =
+		doIt (fs', bail, rt) f =
 			if bail then
-				(f : fs', True)
+				(f : fs', bail, rt)
 			else
-				(f' : fs', bail')
+				(f' : fs', bail', rt')
 			where
-				(f', bail') = applyRollToFrame f roll
+				(f', bail', rt') = applyRollToFrame f roll rt
 
 processRolls :: [Int] -> [Frame]
 processRolls rolls =
 	let
-		fs = [Frame fn ReadyForFirstRoll 0 Nothing Nothing Nothing | fn <- [1..10]]
+		fs = [Frame fn ReadyForFirstRoll 0 Nothing Nothing Nothing Nothing | fn <- [1..10]]
 	in
-		foldl (\fs' r -> processRoll fs' r) fs rolls
-
+		foldl (\fs' roll -> processRoll fs' roll) fs rolls
