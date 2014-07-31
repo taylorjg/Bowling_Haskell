@@ -59,7 +59,8 @@ applyRollToFrame f roll rt = case frameState f of
 
 	SpareNeedOneMore ->
 		let
-			thirdRoll = if isLastFrame f then Just roll else Nothing
+			consumedBall = isLastFrame f
+			thirdRoll = if consumedBall then Just roll else Nothing
 			newScore = score f + roll
 			newFrameState = Complete
 			rt' = rt >>= (\x -> Just (x + newScore))
@@ -69,12 +70,12 @@ applyRollToFrame f roll rt = case frameState f of
 				runningTotal = rt',
 				thirdRoll = thirdRoll}
 		in
-			-- BUG: technically, if this is the last frame, we have consumed this roll.
-			(newFrame, False, rt')
+			(newFrame, consumedBall, rt')
 
 	StrikeNeedTwoMore ->
 		let
-			secondRoll = if isLastFrame f then Just roll else Nothing
+			consumedBall = isLastFrame f
+			secondRoll = if consumedBall then Just roll else Nothing
 			newScore = score f + roll
 			newFrameState = StrikeNeedOneMore
 			newFrame = f { 
@@ -82,11 +83,12 @@ applyRollToFrame f roll rt = case frameState f of
 				score = newScore,
 				secondRoll = secondRoll}
 		in
-			(newFrame, False, Nothing)
+			(newFrame, consumedBall, Nothing)
 
 	StrikeNeedOneMore ->
 		let
-			thirdRoll = if isLastFrame f then Just roll else Nothing
+			consumedBall = isLastFrame f
+			thirdRoll = if consumedBall then Just roll else Nothing
 			newScore = score f + roll
 			newFrameState = Complete
 			rt' = rt >>= (\x -> Just (x + newScore))
@@ -96,14 +98,13 @@ applyRollToFrame f roll rt = case frameState f of
 				runningTotal = rt',
 				thirdRoll = thirdRoll}
 		in
-			-- BUG: technically, if this is the last frame, we have consumed this roll.
-			(newFrame, False, rt')
+			(newFrame, consumedBall, rt')
 
 	Complete -> (f, False, rt >>= (\x -> Just (x + score f)))
 
 processRoll :: [Frame] -> Int -> [Frame]
 processRoll fs roll =
-	reverse $ (\(a,b,c) -> a) $ foldl op ([], False, Just 0) fs
+	reverse $ (\(a, _, _) -> a) $ foldl op ([], False, Just 0) fs
 	where
 		op (fs', bail, rt) f =
 			if bail then
