@@ -30,9 +30,6 @@ data Frame = Frame {
 isLastFrame :: Frame -> Bool
 isLastFrame f = frameNumber f == 10
 
-isFrameComplete :: Frame -> Bool
-isFrameComplete f = frameState f == Complete
-
 applyRollToFrame :: Frame -> Int -> (Frame, Bool)
 applyRollToFrame f roll = case frameState f of
 
