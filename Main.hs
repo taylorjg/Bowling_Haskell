@@ -22,11 +22,14 @@ formatFrames fs = intercalate "\n" $ map formatFrame fs
 chooseRolls :: IO [Int]
 chooseRolls = do
     let preDefinedRolls = [
+            [2, 7],
             [2, 8, 1, 2],
             [10, 1, 2],
             [10, 10, 1, 2],
             take 20 $ cycle [9, 0],
             replicate 21 5,
+            replicate 10 0 ++ [10, 1, 2] ++ replicate 6 0,
+            replicate 10 0 ++ [7, 3, 1, 5] ++ replicate 6 0,
             replicate 18 0 ++ [10, 1, 2],
             replicate 18 0 ++ [7, 3, 1],
             replicate 12 10,
