@@ -1,3 +1,10 @@
+module Bowling (
+    Frame(..),
+    processRolls,
+    maxPins,
+    maxFrames
+    ) where
+
 import Data.List
 import Data.Maybe
 
@@ -35,23 +42,6 @@ frameScore f =
     (fromMaybe 0 $ secondRoll f) +
     (fromMaybe 0 $ thirdRoll f) +
     (sum $ bonusBalls f)
-
-formatFrame :: Frame -> String
-formatFrame f =
-    "{ " ++
-    intercalate ", " [
-        (show $ frameNumber f),
-        (show $ frameState f),
-        (show $ runningTotal f),
-        (show $ firstRoll f),
-        (show $ secondRoll f),
-        (show $ thirdRoll f),
-        (show $ bonusBalls f)
-    ] ++
-    " }"
-
-formatFrames :: [Frame] -> String
-formatFrames fs = intercalate "\n" $ map formatFrame fs
 
 applyRollToFrame :: Frame -> Int -> Maybe Int -> (Frame, Bool, Maybe Int)
 applyRollToFrame f roll rt = case frameState f of
@@ -143,6 +133,3 @@ processRolls rolls =
         fs = [Frame fn ReadyForFirstRoll Nothing Nothing Nothing Nothing [] | fn <- [1..maxFrames]]
     in
         foldl (\fs' roll -> processRoll fs' roll) fs rolls
-
-main = do
-    putStrLn $ formatFrames $ processRolls $ replicate 12 10

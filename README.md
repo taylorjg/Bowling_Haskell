@@ -17,4 +17,4 @@ I am currently learning Haskell so I decided to translate [my previous attempt a
 * Currently, the applyRollToMove method is a bit ugly. Try to improve the structure:
  * maybe introduce different Frame types e.g. one for each frame state
  * add functions to assist with creating a new frame from an old frame
-* Create a separate module for the Frame type and the processRolls function
+* ~~Create a separate module for the Frame type and the processRolls function~~
