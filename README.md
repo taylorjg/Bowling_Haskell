@@ -9,7 +9,7 @@ I am currently learning Haskell so I decided to translate [my previous attempt a
 ## TODO
 
 * Add unit tests using HUnit
-* Allow the user to choose from several pre-defined lists of rolls
+* ~~Allow the user to choose from several pre-defined lists of rolls~~
 * Allow the user to enter a their own list of rolls
 * Display a formatted score card:
  * on the console as an ASCII rendering
