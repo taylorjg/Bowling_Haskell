@@ -16,11 +16,11 @@ data FrameState
 data Frame = Frame {
     frameNumber :: Int,
     frameState :: FrameState,
-    nextRolls :: [Int],
     runningTotal :: Maybe Int,
     firstRoll :: Maybe Int,
     secondRoll :: Maybe Int,
-    thirdRoll :: Maybe Int}
+    thirdRoll :: Maybe Int,
+    bonusBalls :: [Int]}
     deriving Show
 
 isStrike :: Int -> Bool
@@ -34,7 +34,7 @@ frameScore f =
     (fromMaybe 0 $ firstRoll f) +
     (fromMaybe 0 $ secondRoll f) +
     (fromMaybe 0 $ thirdRoll f) +
-    (sum $ nextRolls f)
+    (sum $ bonusBalls f)
 
 formatFrame :: Frame -> String
 formatFrame f =
@@ -42,11 +42,11 @@ formatFrame f =
     intercalate ", " [
         (show $ frameNumber f),
         (show $ frameState f),
-        (show $ nextRolls f),
         (show $ runningTotal f),
         (show $ firstRoll f),
         (show $ secondRoll f),
-        (show $ thirdRoll f)
+        (show $ thirdRoll f),
+        (show $ bonusBalls f)
     ] ++
     " }"
 
@@ -58,71 +58,70 @@ applyRollToFrame f roll rt = case frameState f of
 
     ReadyForFirstRoll ->
         let
-            newFrameState = if isStrike roll then StrikeNeedTwoMore else ReadyForSecondRoll
-            newFrame = f { 
-                frameState = newFrameState, 
+            frameState' = if isStrike roll then StrikeNeedTwoMore else ReadyForSecondRoll
+            f' = f { 
+                frameState = frameState', 
                 firstRoll = Just roll}
         in
-            (newFrame, True, Nothing)
+            (f', True, Nothing)
 
     ReadyForSecondRoll ->
         let
             newScore = (fromJust $ firstRoll f) + roll
             isSpare = newScore == maxPins
-            newFrameState = if isSpare then SpareNeedOneMore else Complete
+            frameState' = if isSpare then SpareNeedOneMore else Complete
             rt' = rt >>= (\x -> if isSpare then Nothing else Just (x + newScore))
-            newFrame = f { 
-                frameState = newFrameState, 
+            f' = f { 
+                frameState = frameState', 
                 runningTotal = rt',
                 secondRoll = Just roll}
         in
-            (newFrame, True, rt')
+            (f', True, rt')
 
     SpareNeedOneMore ->
         let
             consumedBall = isLastFrame f
-            thirdRoll = if consumedBall then Just roll else Nothing
-            newNextRolls = [roll]
-            newScore = maxPins + sum newNextRolls
-            newFrameState = Complete
+            thirdRoll' = if consumedBall then Just roll else Nothing
+            bonusBalls' = if consumedBall then [] else [roll]
+            frameState' = Complete
+            newScore = frameScore f + roll
             rt' = rt >>= (\x -> Just (x + newScore))
-            newFrame = f { 
-                frameState = newFrameState, 
-                nextRolls = newNextRolls,
+            f' = f { 
+                frameState = frameState', 
                 runningTotal = rt',
-                thirdRoll = thirdRoll}
+                thirdRoll = thirdRoll',
+                bonusBalls = bonusBalls'}
         in
-            (newFrame, consumedBall, rt')
+            (f', consumedBall, rt')
 
     StrikeNeedTwoMore ->
         let
             consumedBall = isLastFrame f
-            secondRoll = if consumedBall then Just roll else Nothing
-            newNextRolls = [roll]
-            newScore = maxPins + sum newNextRolls
-            newFrameState = StrikeNeedOneMore
-            newFrame = f { 
-                frameState = newFrameState, 
-                nextRolls = newNextRolls,
-                secondRoll = secondRoll}
+            secondRoll' = if consumedBall then Just roll else Nothing
+            bonusBalls' = if consumedBall then [] else [roll]
+            frameState' = StrikeNeedOneMore
+            f' = f { 
+                frameState = frameState', 
+                secondRoll = secondRoll',
+                bonusBalls = bonusBalls'}
         in
-            (newFrame, consumedBall, Nothing)
+            (f', consumedBall, Nothing)
 
     StrikeNeedOneMore ->
         let
             consumedBall = isLastFrame f
-            thirdRoll = if consumedBall then Just roll else Nothing
-            newNextRolls = (nextRolls f) ++ [roll]
-            newScore = maxPins + sum newNextRolls
-            newFrameState = Complete
+            thirdRoll' = if consumedBall then Just roll else Nothing
+            bonusBalls' = if consumedBall then [] else (bonusBalls f) ++ [roll]
+            frameState' = Complete
+            newScore = frameScore f + roll
             rt' = rt >>= (\x -> Just (x + newScore))
-            newFrame = f { 
-                frameState = newFrameState, 
-                nextRolls = newNextRolls,
+            f' = f { 
+                frameState = frameState', 
                 runningTotal = rt',
-                thirdRoll = thirdRoll}
+                thirdRoll = thirdRoll',
+                bonusBalls = bonusBalls'}
         in
-            (newFrame, consumedBall, rt')
+            (f', consumedBall, rt')
 
     Complete -> (f, False, rt >>= (\x -> Just (x + frameScore f)))
 
@@ -141,7 +140,7 @@ processRoll fs roll =
 processRolls :: [Int] -> [Frame]
 processRolls rolls =
     let
-        fs = [Frame fn ReadyForFirstRoll [] Nothing Nothing Nothing Nothing | fn <- [1..maxFrames]]
+        fs = [Frame fn ReadyForFirstRoll Nothing Nothing Nothing Nothing [] | fn <- [1..maxFrames]]
     in
         foldl (\fs' roll -> processRoll fs' roll) fs rolls
 
