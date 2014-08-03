@@ -21,17 +21,20 @@ formatFrame f =
 formatFrames :: [Frame] -> String
 formatFrames fs = intercalate "\n" $ map formatFrame fs
 
+combineLines :: [String] -> [String] -> [String]
+combineLines lines1 lines2 = zipWith (++) lines1 lines2
+
 addFrameSeperator :: [String] -> [String]
-addFrameSeperator lines = [
-    lines !! 0 ++ "+",
-    lines !! 1 ++ "|",
-    lines !! 2 ++ "+",
-    lines !! 3 ++ "|",
-    lines !! 4 ++ "|",
-    lines !! 5 ++ "|",
-    lines !! 6 ++ "|",
-    lines !! 7 ++ "|",
-    lines !! 8 ++ "+"]
+addFrameSeperator lines = combineLines lines [
+    "+",
+    "|",
+    "+",
+    "|",
+    "|",
+    "|",
+    "|",
+    "|",
+    "+"]
 
 formatFrameNumber :: Frame -> Int -> String
 formatFrameNumber f fw = printf "%-*d" fw fn
@@ -77,16 +80,16 @@ formatRunningTotal f fw =
     where rt = runningTotal f
 
 formatNormalFrame :: [String] -> Frame -> [String]
-formatNormalFrame lines f = [
-    lines !! 0 ++ "-----",
-    lines !! 1 ++ "  " ++ fn,
-    lines !! 2 ++ "-----",
-    lines !! 3 ++ " |" ++ roll1 ++ "|" ++ roll2,
-    lines !! 4 ++ " +-+-",
-    lines !! 5 ++ "     ",
-    lines !! 6 ++ " " ++ rt,
-    lines !! 7 ++ "     ",
-    lines !! 8 ++ "-----"]
+formatNormalFrame lines f = combineLines lines [
+    "-----",
+    "  " ++ fn,
+    "-----",
+    " |" ++ roll1 ++ "|" ++ roll2,
+    " +-+-",
+    "     ",
+    " " ++ rt,
+    "     ",
+    "-----"]
     where
         fn = formatFrameNumber f 3
         roll1 = formatFirstRoll f
@@ -94,16 +97,16 @@ formatNormalFrame lines f = [
         rt = formatRunningTotal f 4
 
 formatLastFrame :: [String] -> Frame -> [String]
-formatLastFrame lines f = [
-    lines !! 0 ++ "-------",
-    lines !! 1 ++ "  " ++ fn,
-    lines !! 2 ++ "-------",
-    lines !! 3 ++ " |" ++ roll1 ++ "|" ++ roll2 ++ "|" ++ roll3,
-    lines !! 4 ++ " +-+-+-",
-    lines !! 5 ++ "       ",
-    lines !! 6 ++ " " ++ rt,
-    lines !! 7 ++ "       ",
-    lines !! 8 ++ "-------"]
+formatLastFrame lines f = combineLines lines [
+    "-------",
+    "  " ++ fn,
+    "-------",
+    " |" ++ roll1 ++ "|" ++ roll2 ++ "|" ++ roll3,
+    " +-+-+-",
+    "       ",
+    " " ++ rt,
+    "       ",
+    "-------"]
     where
         fn = formatFrameNumber f 5
         roll1 = formatFirstRoll f
@@ -114,7 +117,7 @@ formatLastFrame lines f = [
 formatFrame2 :: [String] -> Frame -> [String]
 formatFrame2 lines f = 
     addFrameSeperator $
-    if frameNumber f == maxFrames
+    if isLastFrame f
         then formatLastFrame lines f 
         else formatNormalFrame lines f
 

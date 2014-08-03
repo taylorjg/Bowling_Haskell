@@ -1,6 +1,7 @@
 module Bowling (
     Frame(..),
     processRolls,
+    isLastFrame,
     maxPins,
     maxFrames
     ) where
