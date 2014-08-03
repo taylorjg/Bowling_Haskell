@@ -116,21 +116,31 @@ applyRollToFrame f roll rt = case frameState f of
 
     Complete -> (f, False, rt >>= (\x -> Just (x + frameScore f)))
 
+fstOfTriple :: (a, b, c) -> a
+fstOfTriple (a, _, _) = a
+
 processRoll :: [Frame] -> Int -> [Frame]
 processRoll fs roll =
-    reverse $ (\(a, _, _) -> a) $ foldl op ([], False, Just 0) fs
+    reverse . fstOfTriple $ foldl op ([], False, Just 0) fs
     where
-        op (fs', bail, rt) f =
-            if bail then
-                (f : fs', bail, rt)
+        op (fs', consumedBall, rt) f =
+            if consumedBall then
+                (f : fs', consumedBall, rt)
             else
-                (f' : fs', bail', rt')
+                (f' : fs', consumedBall', rt')
             where
-                (f', bail', rt') = applyRollToFrame f roll rt
+                (f', consumedBall', rt') = applyRollToFrame f roll rt
 
 processRolls :: [Int] -> [Frame]
 processRolls rolls =
-    let
-        fs = [Frame fn ReadyForFirstRoll Nothing Nothing Nothing Nothing [] | fn <- [1..maxFrames]]
-    in
-        foldl (\fs' roll -> processRoll fs' roll) fs rolls
+    foldl (\frames' roll -> processRoll frames' roll) frames rolls
+    where
+        frames = [frameDefault { frameNumber = fn } | fn <- [1..maxFrames]]
+        frameDefault = Frame {
+            frameNumber = undefined,
+            frameState = ReadyForFirstRoll,
+            runningTotal = Nothing,
+            firstRoll = Nothing,
+            secondRoll = Nothing,
+            thirdRoll = Nothing,
+            bonusBalls = []}
