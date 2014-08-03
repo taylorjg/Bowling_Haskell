@@ -1,4 +1,5 @@
 import Data.List (intercalate)
+import Data.Maybe (fromMaybe)
 import Bowling
 import System.IO
 import Text.Printf
@@ -21,60 +22,107 @@ formatFrames :: [Frame] -> String
 formatFrames fs = intercalate "\n" $ map formatFrame fs
 
 addFrameSeperator :: [String] -> [String]
-addFrameSeperator ss = [
-    ss !! 0 ++ "+",
-    ss !! 1 ++ "|",
-    ss !! 2 ++ "+",
-    ss !! 3 ++ "|",
-    ss !! 4 ++ "|",
-    ss !! 5 ++ "|",
-    ss !! 6 ++ "|",
-    ss !! 7 ++ "|",
-    ss !! 8 ++ "+"]
+addFrameSeperator lines = [
+    lines !! 0 ++ "+",
+    lines !! 1 ++ "|",
+    lines !! 2 ++ "+",
+    lines !! 3 ++ "|",
+    lines !! 4 ++ "|",
+    lines !! 5 ++ "|",
+    lines !! 6 ++ "|",
+    lines !! 7 ++ "|",
+    lines !! 8 ++ "+"]
+
+formatFrameNumber :: Frame -> Int -> String
+formatFrameNumber f fw = printf "%-*d" fw fn
+    where fn = frameNumber f
+
+isSpareFrame :: Frame -> Bool
+isSpareFrame f =
+    twoRolls == maxPins
+    where
+        twoRolls =
+            (fromMaybe 11 $ firstRoll f) +
+            (fromMaybe 11 $ secondRoll f)
+
+noRollSymbol = " "
+gutterSymbol = "-"
+spareSymbol = "/"
+strikeSymbol = "X"
+
+formatRoll :: Maybe Int -> String
+formatRoll Nothing = noRollSymbol
+formatRoll (Just x)
+    | x == 0 = gutterSymbol
+    | x == maxPins = strikeSymbol
+    | x > 0 && x < maxPins = show x
+    | otherwise = error "invalid roll!"
+
+formatFirstRoll :: Frame -> String
+formatFirstRoll = formatRoll . firstRoll
+
+formatSecondRoll :: Frame -> String
+formatSecondRoll f =
+    if isSpareFrame f then spareSymbol
+    else formatRoll $ secondRoll f
+
+formatThirdRoll :: Frame -> String
+formatThirdRoll = formatRoll . thirdRoll
+
+formatRunningTotal :: Frame -> Int -> String
+formatRunningTotal f fw =
+    case rt of
+        Nothing -> replicate fw ' '
+        Just x -> printf "%-*d" fw x
+    where rt = runningTotal f
 
 formatNormalFrame :: [String] -> Frame -> [String]
-formatNormalFrame ss f = addFrameSeperator $ [
-    ss !! 0 ++ "-----",
-    ss !! 1 ++ "  " ++ show (frameNumber f) ++ "  ",
-    ss !! 2 ++ "-----",
-    ss !! 3 ++ " | | ",
-    ss !! 4 ++ " +-+-",
-    ss !! 5 ++ "     ",
-    ss !! 6 ++ " " ++ rt,
-    ss !! 7 ++ "     ",
-    ss !! 8 ++ "-----"]
+formatNormalFrame lines f = [
+    lines !! 0 ++ "-----",
+    lines !! 1 ++ "  " ++ fn,
+    lines !! 2 ++ "-----",
+    lines !! 3 ++ " |" ++ roll1 ++ "|" ++ roll2,
+    lines !! 4 ++ " +-+-",
+    lines !! 5 ++ "     ",
+    lines !! 6 ++ " " ++ rt,
+    lines !! 7 ++ "     ",
+    lines !! 8 ++ "-----"]
     where
-        rt = case runningTotal f of
-            Nothing -> "    "
-            Just x -> printf "%-4d" x
+        fn = formatFrameNumber f 3
+        roll1 = formatFirstRoll f
+        roll2 = formatSecondRoll f
+        rt = formatRunningTotal f 4
 
 formatLastFrame :: [String] -> Frame -> [String]
-formatLastFrame ss f = addFrameSeperator $ [
-    ss !! 0 ++ "-------",
-    ss !! 1 ++ "  " ++ show (frameNumber f) ++ "   ",
-    ss !! 2 ++ "-------",
-    ss !! 3 ++ " | | | ",
-    ss !! 4 ++ " +-+-+-",
-    ss !! 5 ++ "       ",
-    ss !! 6 ++ " " ++ rt,
-    ss !! 7 ++ "       ",
-    ss !! 8 ++ "-------"]
+formatLastFrame lines f = [
+    lines !! 0 ++ "-------",
+    lines !! 1 ++ "  " ++ fn,
+    lines !! 2 ++ "-------",
+    lines !! 3 ++ " |" ++ roll1 ++ "|" ++ roll2 ++ "|" ++ roll3,
+    lines !! 4 ++ " +-+-+-",
+    lines !! 5 ++ "       ",
+    lines !! 6 ++ " " ++ rt,
+    lines !! 7 ++ "       ",
+    lines !! 8 ++ "-------"]
     where
-        rt = case runningTotal f of
-            Nothing -> "      "
-            Just x -> printf "%-6d" x
+        fn = formatFrameNumber f 5
+        roll1 = formatFirstRoll f
+        roll2 = formatSecondRoll f
+        roll3 = formatThirdRoll f
+        rt = formatRunningTotal f 6
 
 formatFrame2 :: [String] -> Frame -> [String]
-formatFrame2 ss f = 
+formatFrame2 lines f = 
+    addFrameSeperator $
     if frameNumber f == maxFrames
-        then formatLastFrame ss f 
-        else formatNormalFrame ss f
+        then formatLastFrame lines f 
+        else formatNormalFrame lines f
 
 formatFrames2 :: [Frame] -> [String]
 formatFrames2 fs =
-    foldl formatFrame2 ss fs
+    foldl formatFrame2 lines fs
     where
-        ss = addFrameSeperator $ replicate 9 ""
+        lines = addFrameSeperator $ replicate 9 ""
 
 chooseRolls :: IO [Int]
 chooseRolls = do
