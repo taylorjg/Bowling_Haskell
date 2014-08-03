@@ -145,6 +145,7 @@ chooseRolls = do
             [10, 7, 3, 7, 2, 9, 1, 10, 10, 10, 2, 3, 6, 4, 7, 3, 3]]
     mapM_ putStrLn $ zipWith (\i rs -> show i ++ ") " ++ show rs) [0..] preDefinedRolls
     putStr "Please choose a list of rolls: "
+    hFlush stdout
     choice <- getLine
     return $ preDefinedRolls !! (read choice)
 

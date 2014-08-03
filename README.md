@@ -6,6 +6,10 @@ I am currently learning Haskell so I decided to translate [my previous attempt a
 
 * http://content.codersdojo.org/code-kata-catalogue/bowling-game/
 
+## Screenshots
+
+![Screenshot](https://raw.githubusercontent.com/taylorjg/Bowling_Haskell/master/Images/Screenshot.png "Screenshot")
+
 ## TODO
 
 * Add unit tests using HUnit
