@@ -133,9 +133,9 @@ processRoll fs roll =
 
 processRolls :: [Int] -> [Frame]
 processRolls rolls =
-    foldl (\frames' roll -> processRoll frames' roll) frames rolls
+    foldl processRoll initialFrames rolls
     where
-        frames = [frameDefault { frameNumber = fn } | fn <- [1..maxFrames]]
+        initialFrames = [frameDefault { frameNumber = fn } | fn <- [1..maxFrames]]
         frameDefault = Frame {
             frameNumber = undefined,
             frameState = ReadyForFirstRoll,
