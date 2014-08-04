@@ -1,5 +1,9 @@
 module Bowling (
     Frame(..),
+    RunningTotal,
+    Roll,
+    Rolls,
+    Frames,
     processRolls,
     isLastFrame,
     maxPins,
@@ -8,6 +12,7 @@ module Bowling (
 
 import Data.List
 import Data.Maybe
+import Control.Monad (liftM)
 
 maxPins = 10
 maxFrames = 10
@@ -24,14 +29,19 @@ data FrameState
 data Frame = Frame {
     frameNumber :: Int,
     frameState :: FrameState,
-    runningTotal :: Maybe Int,
-    firstRoll :: Maybe Int,
-    secondRoll :: Maybe Int,
-    thirdRoll :: Maybe Int,
-    bonusBalls :: [Int]}
+    runningTotal :: Maybe RunningTotal,
+    firstRoll :: Maybe Roll,
+    secondRoll :: Maybe Roll,
+    thirdRoll :: Maybe Roll,
+    bonusBalls :: [Roll]}
     deriving Show
 
-isStrike :: Int -> Bool
+type RunningTotal = Int
+type Roll = Int
+type Rolls = [Roll]
+type Frames = [Frame]
+
+isStrike :: Roll -> Bool
 isStrike roll = roll == maxPins
 
 isLastFrame :: Frame -> Bool
@@ -44,7 +54,7 @@ frameScore f =
     (fromMaybe 0 $ thirdRoll f) +
     (sum $ bonusBalls f)
 
-applyRollToFrame :: Frame -> Int -> Maybe Int -> (Frame, Bool, Maybe Int)
+applyRollToFrame :: Frame -> Roll -> Maybe RunningTotal -> (Frame, Bool, Maybe RunningTotal)
 applyRollToFrame f roll rt = case frameState f of
 
     ReadyForFirstRoll ->
@@ -58,7 +68,7 @@ applyRollToFrame f roll rt = case frameState f of
 
     ReadyForSecondRoll ->
         let
-            newScore = (fromJust $ firstRoll f) + roll
+            newScore = frameScore f + roll
             isSpare = newScore == maxPins
             frameState' = if isSpare then SpareNeedOneMore else Complete
             rt' = rt >>= (\x -> if isSpare then Nothing else Just (x + newScore))
@@ -76,7 +86,7 @@ applyRollToFrame f roll rt = case frameState f of
             bonusBalls' = if consumedBall then [] else [roll]
             frameState' = Complete
             newScore = frameScore f + roll
-            rt' = rt >>= (\x -> Just (x + newScore))
+            rt' = (+newScore) `liftM` rt
             f' = f { 
                 frameState = frameState', 
                 runningTotal = rt',
@@ -105,7 +115,7 @@ applyRollToFrame f roll rt = case frameState f of
             bonusBalls' = if consumedBall then [] else (bonusBalls f) ++ [roll]
             frameState' = Complete
             newScore = frameScore f + roll
-            rt' = rt >>= (\x -> Just (x + newScore))
+            rt' = (+newScore) `liftM` rt
             f' = f { 
                 frameState = frameState', 
                 runningTotal = rt',
@@ -114,12 +124,12 @@ applyRollToFrame f roll rt = case frameState f of
         in
             (f', consumedBall, rt')
 
-    Complete -> (f, False, rt >>= (\x -> Just (x + frameScore f)))
+    Complete -> (f, False, (+ frameScore f) `liftM` rt)
 
 fstOfTriple :: (a, b, c) -> a
 fstOfTriple (a, _, _) = a
 
-processRoll :: [Frame] -> Int -> [Frame]
+processRoll :: Frames -> Roll -> Frames
 processRoll fs roll =
     reverse . fstOfTriple $ foldl op ([], False, Just 0) fs
     where
@@ -131,7 +141,7 @@ processRoll fs roll =
             where
                 (f', consumedBall', rt') = applyRollToFrame f roll rt
 
-processRolls :: [Int] -> [Frame]
+processRolls :: Rolls -> Frames
 processRolls rolls =
     foldl processRoll initialFrames rolls
     where

@@ -4,8 +4,11 @@ import Bowling
 import System.IO
 import Text.Printf
 
-formatFrame :: Frame -> String
-formatFrame f =
+type Line = String
+type Lines = [Line]
+
+formatFrame1 :: Frame -> Line
+formatFrame1 f =
     "{ " ++
     intercalate ", " [
         (show $ frameNumber f),
@@ -18,23 +21,8 @@ formatFrame f =
     ] ++
     " }"
 
-formatFrames :: [Frame] -> String
-formatFrames fs = intercalate "\n" $ map formatFrame fs
-
-combineLines :: [String] -> [String] -> [String]
-combineLines lines1 lines2 = zipWith (++) lines1 lines2
-
-addFrameSeperator :: [String] -> [String]
-addFrameSeperator lines = combineLines lines [
-    "+",
-    "|",
-    "+",
-    "|",
-    "|",
-    "|",
-    "|",
-    "|",
-    "+"]
+formatFrames1 :: Frames -> Lines
+formatFrames1 = map formatFrame1
 
 formatFrameNumber :: Frame -> Int -> String
 formatFrameNumber f fw = printf "%-*d" fw fn
@@ -53,13 +41,13 @@ gutterSymbol = "-"
 spareSymbol = "/"
 strikeSymbol = "X"
 
-formatRoll :: Maybe Int -> String
+formatRoll :: Maybe Roll -> String
 formatRoll Nothing = noRollSymbol
 formatRoll (Just x)
     | x == 0 = gutterSymbol
     | x == maxPins = strikeSymbol
     | x > 0 && x < maxPins = show x
-    | otherwise = error "invalid roll!"
+    | otherwise = error $ "formatRoll: invalid roll (" ++ show x ++ ")"
 
 formatFirstRoll :: Frame -> String
 formatFirstRoll = formatRoll . firstRoll
@@ -79,8 +67,23 @@ formatRunningTotal f fw =
         Just x -> printf "%-*d" fw x
     where rt = runningTotal f
 
-formatNormalFrame :: [String] -> Frame -> [String]
-formatNormalFrame lines f = combineLines lines [
+combineLines :: Lines -> Lines -> Lines
+combineLines lines1 lines2 = zipWith (++) lines1 lines2
+
+addFrameSeperator :: Lines -> Lines
+addFrameSeperator lines = combineLines lines [
+    "+",
+    "|",
+    "+",
+    "|",
+    "|",
+    "|",
+    "|",
+    "|",
+    "+"]
+
+formatNormalFrame :: Frame -> Lines -> Lines
+formatNormalFrame f lines = combineLines lines [
     "-----",
     "  " ++ fn,
     "-----",
@@ -96,8 +99,8 @@ formatNormalFrame lines f = combineLines lines [
         roll2 = formatSecondRoll f
         rt = formatRunningTotal f 4
 
-formatLastFrame :: [String] -> Frame -> [String]
-formatLastFrame lines f = combineLines lines [
+formatLastFrame :: Frame -> Lines -> Lines
+formatLastFrame f lines = combineLines lines [
     "-------",
     "  " ++ fn,
     "-------",
@@ -114,20 +117,21 @@ formatLastFrame lines f = combineLines lines [
         roll3 = formatThirdRoll f
         rt = formatRunningTotal f 6
 
-formatFrame2 :: [String] -> Frame -> [String]
+formatFrame2 :: Lines -> Frame -> Lines
 formatFrame2 lines f = 
     addFrameSeperator $
     if isLastFrame f
-        then formatLastFrame lines f 
-        else formatNormalFrame lines f
+        then formatLastFrame f lines
+        else formatNormalFrame f lines
 
-formatFrames2 :: [Frame] -> [String]
+formatFrames2 :: Frames -> Lines
 formatFrames2 fs =
     foldl formatFrame2 lines fs
     where
-        lines = addFrameSeperator $ replicate 9 ""
+        lines = addFrameSeperator emptyLines
+        emptyLines = replicate 9 ""
 
-chooseRolls :: IO [Int]
+chooseRolls :: IO Rolls
 chooseRolls = do
     let preDefinedRolls = [
             replicate 20 0,
@@ -152,5 +156,5 @@ chooseRolls = do
 main = do
     rolls <- chooseRolls
     let frames = processRolls rolls
-    putStrLn $ formatFrames frames
+    mapM_ putStrLn $ formatFrames1 frames
     mapM_ putStrLn $ formatFrames2 frames
