@@ -6,13 +6,13 @@ assertFrame :: Frames -> Int -> Frame -> Assertion
 assertFrame frames n f2 = do
     let f1 = frames !! n
     let msgSuffix = " in frame number " ++ show (n + 1)
-    let localAssertEqual msg a b = assertEqual (msg ++ msgSuffix) a b
-    localAssertEqual "wrong frameNumber" (frameNumber f1) (frameNumber f2)
-    localAssertEqual "wrong runningTotal" (runningTotal f1) (runningTotal f2)
-    localAssertEqual "wrong firstRoll" (firstRoll f1) (firstRoll f2)
-    localAssertEqual "wrong secondRoll" (secondRoll f1) (secondRoll f2)
-    localAssertEqual "wrong thirdRoll" (thirdRoll f1) (thirdRoll f2)
-    localAssertEqual "wrong bonusBalls" (bonusBalls f1) (bonusBalls f2)
+    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
+    assertEqual' "wrong frameNumber" (frameNumber f1) (frameNumber f2)
+    assertEqual' "wrong runningTotal" (runningTotal f1) (runningTotal f2)
+    assertEqual' "wrong firstRoll" (firstRoll f1) (firstRoll f2)
+    assertEqual' "wrong secondRoll" (secondRoll f1) (secondRoll f2)
+    assertEqual' "wrong thirdRoll" (thirdRoll f1) (thirdRoll f2)
+    assertEqual' "wrong bonusBalls" (bonusBalls f1) (bonusBalls f2)
 
 testEmptyListOfRolls = TestCase $ do
     assertFrame frames 0 expectedFrame
