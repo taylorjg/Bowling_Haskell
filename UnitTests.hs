@@ -2,62 +2,68 @@ import Test.HUnit
 import Bowling
 import System.IO
 
-test1 = TestCase $ do
-	let frames = processRolls []	
-	let f1 = frames !! 0
-	assertEqual "frameNumber of frame 1" 1 (frameNumber f1)
-	assertEqual "runningTotal of frame 1" Nothing (runningTotal f1)
-	assertEqual "firstRoll of frame 1" Nothing (firstRoll f1)
-	assertEqual "secondRoll of frame 1" Nothing (secondRoll f1)
-	assertEqual "thirdRoll of frame 1" Nothing (thirdRoll f1)
-	assertEqual "bonusBalls of frame 1" [] (bonusBalls f1)
+assertFrame :: Frames -> Int -> Frame -> Assertion
+assertFrame frames n f2 = do
+	let f1 = frames !! n
+	let msgSuffix = " in frame number " ++ show (n + 1)
+	let localAssertEqual msg a b = assertEqual (msg ++ msgSuffix) a b
+	localAssertEqual "wrong frameNumber" (frameNumber f1) (frameNumber f2)
+	localAssertEqual "wrong runningTotal" (runningTotal f1) (runningTotal f2)
+	localAssertEqual "wrong firstRoll" (firstRoll f1) (firstRoll f2)
+	localAssertEqual "wrong secondRoll" (secondRoll f1) (secondRoll f2)
+	localAssertEqual "wrong thirdRoll" (thirdRoll f1) (thirdRoll f2)
+	localAssertEqual "wrong bonusBalls" (bonusBalls f1) (bonusBalls f2)
 
-test2 = TestCase $ do
-	let frames = processRolls [4]
-	let f1 = frames !! 0
-	assertEqual "frameNumber of frame 1" 1 (frameNumber f1)
-	assertEqual "runningTotal of frame 1" Nothing (runningTotal f1)
-	assertEqual "firstRoll of frame 1" (Just 4) (firstRoll f1)
-	assertEqual "secondRoll of frame 1" Nothing (secondRoll f1)
-	assertEqual "thirdRoll of frame 1" Nothing (thirdRoll f1)
-	assertEqual "bonusBalls of frame 1" [] (bonusBalls f1)
+testEmptyListOfRolls = TestCase $ do
+	assertFrame frames 0 expectedFrame
+	where
+		frames = processRolls []
+		expectedFrame = frameDefault { frameNumber = 1 }
 
-test3 = TestCase $ do
-	let frames = processRolls [4, 5]
-	let f1 = frames !! 0
-	assertEqual "frameNumber of frame 1" 1 (frameNumber f1)
-	assertEqual "runningTotal of frame 1" (Just 9) (runningTotal f1)
-	assertEqual "firstRoll of frame 1" (Just 4) (firstRoll f1)
-	assertEqual "secondRoll of frame 1" (Just 5) (secondRoll f1)
-	assertEqual "thirdRoll of frame 1" Nothing (thirdRoll f1)
-	assertEqual "bonusBalls of frame 1" [] (bonusBalls f1)
+testSingleRoll = TestCase $ do
+	assertFrame frames 0 expectedFrame
+	where
+		frames = processRolls [4]
+		expectedFrame = frameDefault {
+			frameNumber = 1,
+			firstRoll = Just 4}
 
-test4 = TestCase $ do
-	let frames = processRolls [4, 6]
-	let f1 = frames !! 0
-	assertEqual "frameNumber of frame 1" 1 (frameNumber f1)
-	assertEqual "runningTotal of frame 1" Nothing (runningTotal f1)
-	assertEqual "firstRoll of frame 1" (Just 4) (firstRoll f1)
-	assertEqual "secondRoll of frame 1" (Just 6) (secondRoll f1)
-	assertEqual "thirdRoll of frame 1" Nothing (thirdRoll f1)
-	assertEqual "bonusBalls of frame 1" [] (bonusBalls f1)
+testUninterestingFirstFrame = TestCase $ do
+	assertFrame frames 0 expectedFrame
+	where
+		frames = processRolls [4, 5]
+		expectedFrame = frameDefault {
+			frameNumber = 1,
+			runningTotal = Just 9,
+			firstRoll = Just 4,
+			secondRoll = Just 5}
 
-test5 = TestCase $ do
-	let frames = processRolls [4, 6, 5]
-	let f1 = frames !! 0
-	assertEqual "frameNumber of frame 1" 1 (frameNumber f1)
-	assertEqual "runningTotal of frame 1" (Just 15) (runningTotal f1)
-	assertEqual "firstRoll of frame 1" (Just 4) (firstRoll f1)
-	assertEqual "secondRoll of frame 1" (Just 6) (secondRoll f1)
-	assertEqual "thirdRoll of frame 1" Nothing (thirdRoll f1)
-	assertEqual "bonusBalls of frame 1" [5] (bonusBalls f1)
+testFirstFrameSpareWithoutBonusBall = TestCase $ do
+	assertFrame frames 0 expectedFrame
+	where
+		frames = processRolls [4, 6]
+		expectedFrame = frameDefault {
+			frameNumber = 1,
+			firstRoll = Just 4,
+			secondRoll = Just 6}
+
+testFirstFrameSpareWithBonusBall = TestCase $ do
+	assertFrame frames 0 expectedFrame
+	where
+		frames = processRolls [4, 6, 5]
+		expectedFrame = frameDefault {
+			frameNumber = 1,
+			runningTotal = Just 15,
+			firstRoll = Just 4,
+			secondRoll = Just 6,
+			bonusBalls = [5]}
 
 tests = TestList [
-	TestLabel "empty list of rolls" test1,
-	TestLabel "1 roll" test2,
-	TestLabel "2 rolls adding up to less than 10" test3,
-	TestLabel "2 rolls => spare => first frame is incomplete" test4,
-	TestLabel "3 rolls => first frame is complete" test5
+		testEmptyListOfRolls,
+		testSingleRoll,
+		testUninterestingFirstFrame,
+		testFirstFrameSpareWithoutBonusBall,
+		testFirstFrameSpareWithBonusBall
 	]
 
-main = runTestText (putTextToHandle stderr True) tests
+main = runTestTT tests

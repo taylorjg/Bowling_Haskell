@@ -7,7 +7,8 @@ module Bowling (
     processRolls,
     isLastFrame,
     maxPins,
-    maxFrames
+    maxFrames,
+    frameDefault
     ) where
 
 import Data.List
@@ -141,16 +142,17 @@ processRoll fs roll =
             where
                 (f', consumedBall', rt') = applyRollToFrame f roll rt
 
+frameDefault = Frame {
+    frameNumber = undefined,
+    frameState = ReadyForFirstRoll,
+    runningTotal = Nothing,
+    firstRoll = Nothing,
+    secondRoll = Nothing,
+    thirdRoll = Nothing,
+    bonusBalls = []}
+
 processRolls :: Rolls -> Frames
 processRolls rolls =
     foldl processRoll initialFrames rolls
     where
         initialFrames = [frameDefault { frameNumber = fn } | fn <- [1..maxFrames]]
-        frameDefault = Frame {
-            frameNumber = undefined,
-            frameState = ReadyForFirstRoll,
-            runningTotal = Nothing,
-            firstRoll = Nothing,
-            secondRoll = Nothing,
-            thirdRoll = Nothing,
-            bonusBalls = []}
