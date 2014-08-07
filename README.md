@@ -13,6 +13,7 @@ I am currently learning Haskell so I decided to translate [my previous attempt a
 ## TODO
 
 * Add unit tests using HUnit
+* Add property tests using QuickCheck
 * ~~Allow the user to choose from several pre-defined lists of rolls~~
 * Allow the user to enter a custom list of rolls
 * Display a formatted score card:
@@ -22,3 +23,5 @@ I am currently learning Haskell so I decided to translate [my previous attempt a
  * maybe introduce different Frame types e.g. one for each frame state?
  * add functions to assist with creating a new frame from an old frame?
 * ~~Create a separate module for the Frame type and the processRolls function~~
+* add error handling e.g. rolls < 0 or > 10 etc.
+ * change the signature of processRolls to be Rolls -> Either BowlingError Frames ?
