@@ -12,7 +12,7 @@ I am currently learning Haskell so I decided to translate [my previous attempt a
 
 ## TODO
 
-* Add unit tests using HUnit
+* ~~Add unit tests using HUnit~~
 * Add property tests using QuickCheck
 * ~~Allow the user to choose from several pre-defined lists of rolls~~
 * Allow the user to enter a custom list of rolls

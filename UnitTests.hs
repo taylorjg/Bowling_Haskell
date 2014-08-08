@@ -1,6 +1,5 @@
 import Test.HUnit
 import Bowling
-import System.IO
 
 assertFrame :: Frames -> Int -> Frame -> Assertion
 assertFrame frames fn f2 = do
