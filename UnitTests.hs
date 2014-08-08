@@ -115,6 +115,34 @@ testLastFrameSpareWithBonusBall = TestCase $ do
             secondRoll = Just 2,
             thirdRoll = Just 5}
 
+testLastFrameStrikeWithoutBonusBalls = TestCase $ do
+    assertFrame frames 10 expectedFrame
+    where
+        frames = processRolls (replicate 18 0 ++ [10])
+        expectedFrame = frameDefault {
+            frameNumber = 10,
+            firstRoll = Just 10}
+
+testLastFrameStrikeWithFirstBonusBall = TestCase $ do
+    assertFrame frames 10 expectedFrame
+    where
+        frames = processRolls (replicate 18 0 ++ [10, 4])
+        expectedFrame = frameDefault {
+            frameNumber = 10,
+            firstRoll = Just 10,
+            secondRoll = Just 4}
+
+testLastFrameStrikeWithBothBonusBalls = TestCase $ do
+    assertFrame frames 10 expectedFrame
+    where
+        frames = processRolls (replicate 18 0 ++ [10, 4, 2])
+        expectedFrame = frameDefault {
+            frameNumber = 10,
+            runningTotal = Just 16,
+            firstRoll = Just 10,
+            secondRoll = Just 4,
+            thirdRoll = Just 2}
+
 tests = TestList [
         TestLabel "testEmptyListOfRolls" testEmptyListOfRolls,
         TestLabel "testSingleRoll" testSingleRoll,
@@ -126,7 +154,10 @@ tests = TestList [
         TestLabel "testFirstFrameStrikeWithBothBonusBalls" testFirstFrameStrikeWithBothBonusBalls,
         TestLabel "testUninterestingLastFrame" testUninterestingLastFrame,
         TestLabel "testLastFrameSpareWithoutBonusBall" testLastFrameSpareWithoutBonusBall,
-        TestLabel "testLastFrameSpareWithBonusBall" testLastFrameSpareWithBonusBall
+        TestLabel "testLastFrameSpareWithBonusBall" testLastFrameSpareWithBonusBall,
+        TestLabel "testLastFrameStrikeWithoutBonusBalls" testLastFrameStrikeWithoutBonusBalls,
+        TestLabel "testLastFrameStrikeWithFirstBonusBall" testLastFrameStrikeWithFirstBonusBall,
+        TestLabel "testLastFrameStrikeWithBothBonusBalls" testLastFrameStrikeWithBothBonusBalls
     ]
 
 main = runTestTT tests
