@@ -12,17 +12,17 @@ executable Bowling
     build-depends: HUnit -any, QuickCheck -any, base -any, random -any
     main-is: Main.hs
     buildable: True
-    hs-source-dirs: .
+    hs-source-dirs: src
  
-test-suite Bowling_Property_Tests
-    build-depends: HUnit -any, QuickCheck -any, base -any, random -any
-    type: exitcode-stdio-1.0
-    main-is: PropertyTests.hs
-    buildable: True
-    hs-source-dirs: .
 test-suite Bowling_Unit_Tests
     build-depends: HUnit -any, QuickCheck -any, base -any, random -any
     type: exitcode-stdio-1.0
     main-is: UnitTests.hs
     buildable: True
-    hs-source-dirs: .
+    hs-source-dirs: src
+test-suite Bowling_Property_Tests
+    build-depends: HUnit -any, QuickCheck -any, base -any, random -any
+    type: exitcode-stdio-1.0
+    main-is: PropertyTests.hs
+    buildable: True
+    hs-source-dirs: src
