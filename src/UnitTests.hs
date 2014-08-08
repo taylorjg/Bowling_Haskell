@@ -1,5 +1,6 @@
 import Test.HUnit
 import Bowling
+import System.Exit (exitFailure)
 
 assertFrame :: Frames -> Int -> Frame -> Assertion
 assertFrame frames fn f2 = do
@@ -159,4 +160,10 @@ tests = TestList [
         TestLabel "testLastFrameStrikeWithBothBonusBalls" testLastFrameStrikeWithBothBonusBalls
     ]
 
-main = runTestTT tests
+main :: IO ()
+main = do
+    counts <- runTestTT tests
+    if errors counts > 0 || failures counts > 0
+        then exitFailure
+        else return ()
+

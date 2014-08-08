@@ -1,8 +1,10 @@
 import Test.QuickCheck
+import Test.QuickCheck.Test
 import Test.QuickCheck.Gen
 import System.Random
 import Bowling
 import Control.Monad (join)
+import System.Exit (exitFailure)
 
 rollsFromRollsFor12Frames :: [Rolls] -> Rolls
 rollsFromRollsFor12Frames rollsFor12Frames =
@@ -52,6 +54,10 @@ allValidFrameRolls = [ [r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10] ++
 allValidFrameRollsGen = elements allValidFrameRolls
 rollsFor12FramesGen = vectorOf 12 allValidFrameRollsGen
 
+main :: IO ()
 main = do
-    quickCheck (forAll rollsFor12FramesGen prop_FrameIntegrityAfterOneRoll)
-    quickCheck (forAll rollsFor12FramesGen prop_FrameIntegrityAfterTwoRolls)
+    r1 <- quickCheckResult (forAll rollsFor12FramesGen prop_FrameIntegrityAfterOneRoll)
+    r2 <- quickCheckResult (forAll rollsFor12FramesGen prop_FrameIntegrityAfterTwoRolls)
+    if all isSuccess [r1, r2]
+        then return ()
+        else exitFailure
