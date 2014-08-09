@@ -34,12 +34,12 @@ prop_FrameIntegrityAfterTwoRolls rolls =
         r1 = rolls !! 0
         r2 = rolls !! 1
 
-nonStrikeFrame = [ [r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10]
-nonStrikeFrameGen = elements nonStrikeFrame
+nonStrikeFrameRolls = [ [r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10]
+nonStrikeFrameRollsGen = elements nonStrikeFrameRolls
 
-strikeFrameGen = return [10] :: Gen Rolls
+strikeFrameRollsGen = return [10] :: Gen Rolls
 
-frameGen = frequency [(40, nonStrikeFrameGen), (60, strikeFrameGen)]
+frameGen = frequency [(40, nonStrikeFrameRollsGen), (60, strikeFrameRollsGen)]
 
 rollsGen :: Gen Rolls
 rollsGen = do
