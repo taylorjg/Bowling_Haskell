@@ -1,6 +1,5 @@
 import Test.QuickCheck
 import Test.QuickCheck.Test
-import Test.QuickCheck.Gen
 import System.Random
 import Bowling
 import Control.Monad (join)
@@ -35,14 +34,17 @@ prop_FrameIntegrityAfterTwoRolls rolls =
         r1 = rolls !! 0
         r2 = rolls !! 1
 
--- TODO: use 'frequency' to get more strikes e.g. 50% of all pairs
-pairsOfRolls = [ [r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10] ++ [[10]] :: [Rolls]
-pairsOfRollsGen = elements pairsOfRolls
+nonStrikeFrame = [ [r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10]
+nonStrikeFrameGen = elements nonStrikeFrame
+
+strikeFrameGen = return [10] :: Gen Rolls
+
+frameGen = frequency [(40, nonStrikeFrameGen), (60, strikeFrameGen)]
 
 rollsGen :: Gen Rolls
 rollsGen = do
-    tenFrames <- vectorOf 10 pairsOfRollsGen
-    twoFrames <- vectorOf 2 pairsOfRollsGen
+    tenFrames <- vectorOf 10 frameGen
+    twoFrames <- vectorOf 2 frameGen
     let lastFrame = last tenFrames
     let rolls = join tenFrames
     let bonusBalls = join twoFrames
