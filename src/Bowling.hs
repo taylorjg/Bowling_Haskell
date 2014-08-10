@@ -56,74 +56,73 @@ frameScore f =
     (sum $ bonusBalls f)
 
 applyRollToFrame :: Frame -> Roll -> Maybe RunningTotal -> (Frame, Bool, Maybe RunningTotal)
-applyRollToFrame f roll rt = case frameState f of
 
-    ReadyForFirstRoll ->
-        (f', True, Nothing)
-        where
-            frameState' = if isStrike roll then StrikeNeedTwoMore else ReadyForSecondRoll
-            f' = f { 
-                frameState = frameState', 
-                firstRoll = Just roll}
+applyRollToFrame f@Frame {frameState = ReadyForFirstRoll} roll rt = 
+    (f', True, Nothing)
+    where
+        frameState' = if isStrike roll then StrikeNeedTwoMore else ReadyForSecondRoll
+        f' = f { 
+            frameState = frameState', 
+            firstRoll = Just roll}
 
-    ReadyForSecondRoll ->
-        (f', True, rt')
-        where
-            newScore = frameScore f + roll
-            isSpare = newScore == maxPins
-            frameState' = if isSpare then SpareNeedOneMore else Complete
-            rt' = rt >>= (\x -> if isSpare then Nothing else Just (x + newScore))
-            f' = f { 
-                frameState = frameState', 
-                runningTotal = rt',
-                secondRoll = Just roll}
+applyRollToFrame f@Frame {frameState = ReadyForSecondRoll} roll rt = 
+    (f', True, rt')
+    where
+        newScore = frameScore f + roll
+        isSpare = newScore == maxPins
+        frameState' = if isSpare then SpareNeedOneMore else Complete
+        rt' = rt >>= (\x -> if isSpare then Nothing else Just (x + newScore))
+        f' = f { 
+            frameState = frameState', 
+            runningTotal = rt',
+            secondRoll = Just roll}
 
-    SpareNeedOneMore ->
-        (f', consumedBall, rt')
-        where
-            consumedBall = isLastFrame f
-            thirdRoll' = if consumedBall then Just roll else Nothing
-            bonusBalls' = if consumedBall then [] else [roll]
-            frameState' = Complete
-            newScore = frameScore f + roll
-            rt' = (+newScore) `liftM` rt
-            f' = f { 
-                frameState = frameState', 
-                runningTotal = rt',
-                thirdRoll = thirdRoll',
-                bonusBalls = bonusBalls'}
+applyRollToFrame f@Frame {frameState = SpareNeedOneMore} roll rt = 
+    (f', consumedBall, rt')
+    where
+        consumedBall = isLastFrame f
+        thirdRoll' = if consumedBall then Just roll else Nothing
+        bonusBalls' = if consumedBall then [] else [roll]
+        frameState' = Complete
+        newScore = frameScore f + roll
+        rt' = (+newScore) `liftM` rt
+        f' = f { 
+            frameState = frameState', 
+            runningTotal = rt',
+            thirdRoll = thirdRoll',
+            bonusBalls = bonusBalls'}
 
-    StrikeNeedTwoMore ->
-        (f', consumedBall, Nothing)
-        where
-            consumedBall = isLastFrame f
-            secondRoll' = if consumedBall then Just roll else Nothing
-            bonusBalls' = if consumedBall then [] else [roll]
-            frameState' = StrikeNeedOneMore
-            f' = f { 
-                frameState = frameState', 
-                secondRoll = secondRoll',
-                bonusBalls = bonusBalls'}
+applyRollToFrame f@Frame {frameState = StrikeNeedTwoMore} roll rt = 
+    (f', consumedBall, Nothing)
+    where
+        consumedBall = isLastFrame f
+        secondRoll' = if consumedBall then Just roll else Nothing
+        bonusBalls' = if consumedBall then [] else [roll]
+        frameState' = StrikeNeedOneMore
+        f' = f { 
+            frameState = frameState', 
+            secondRoll = secondRoll',
+            bonusBalls = bonusBalls'}
 
-    StrikeNeedOneMore ->
-        (f', consumedBall, rt')
-        where
-            consumedBall = isLastFrame f
-            thirdRoll' = if consumedBall then Just roll else Nothing
-            bonusBalls' = if consumedBall then [] else (bonusBalls f) ++ [roll]
-            frameState' = Complete
-            newScore = frameScore f + roll
-            rt' = (+newScore) `liftM` rt
-            f' = f { 
-                frameState = frameState', 
-                runningTotal = rt',
-                thirdRoll = thirdRoll',
-                bonusBalls = bonusBalls'}
+applyRollToFrame f@Frame {frameState = StrikeNeedOneMore} roll rt = 
+    (f', consumedBall, rt')
+    where
+        consumedBall = isLastFrame f
+        thirdRoll' = if consumedBall then Just roll else Nothing
+        bonusBalls' = if consumedBall then [] else (bonusBalls f) ++ [roll]
+        frameState' = Complete
+        newScore = frameScore f + roll
+        rt' = (+newScore) `liftM` rt
+        f' = f { 
+            frameState = frameState', 
+            runningTotal = rt',
+            thirdRoll = thirdRoll',
+            bonusBalls = bonusBalls'}
 
-    Complete ->
-        (f, False, newScore)
-        where
-            newScore = (+ frameScore f) `liftM` rt
+applyRollToFrame f@Frame {frameState = Complete} roll rt = 
+    (f, False, newScore)
+    where
+        newScore = (+ frameScore f) `liftM` rt
 
 fstOfTriple :: (a, b, c) -> a
 fstOfTriple (a, _, _) = a
