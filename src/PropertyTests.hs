@@ -2,7 +2,7 @@ import Test.QuickCheck
 import Test.QuickCheck.Test
 import System.Random
 import Bowling
-import Control.Monad (join)
+import Control.Monad (join, liftM2)
 import System.Exit (exitFailure)
 
 prop_FrameIntegrityAfterOneRoll :: Rolls -> Bool
@@ -34,6 +34,26 @@ prop_FrameIntegrityAfterTwoRolls rolls =
         r1 = rolls !! 0
         r2 = rolls !! 1
 
+prop_AllFramesNumbersAreCorrect :: Rolls -> Bool
+prop_AllFramesNumbersAreCorrect rolls =
+    and [fst p == (frameNumber $ snd p) | p <- pairs]
+    where
+        frames = processRolls rolls
+        pairs = zip [1..] frames
+
+-- except the last frame !!!
+prop_AllFramesHaveTwoRollTotalNoGreaterThanTen :: Rolls -> Bool
+prop_AllFramesHaveTwoRollTotalNoGreaterThanTen rolls =
+    result
+    where
+        frames = processRolls rolls
+        pairs = zip (map firstRoll frames) (map secondRoll frames)
+        p = pairs !! 0
+        sum = liftM2 (+) (fst p) (snd p)
+        result = case sum of
+            Nothing -> True
+            Just x -> x <= 10
+
 nonStrikeFrameRolls = [ [r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10]
 nonStrikeFrameRollsGen = elements nonStrikeFrameRolls
 
@@ -59,9 +79,10 @@ calculateNumBonusBalls [r1, r2]
     
 main :: IO ()
 main = do
-    sample rollsGen
     r1 <- quickCheckResult (forAll rollsGen prop_FrameIntegrityAfterOneRoll)
     r2 <- quickCheckResult (forAll rollsGen prop_FrameIntegrityAfterTwoRolls)
-    if all isSuccess [r1, r2]
+    r3 <- quickCheckResult (forAll rollsGen prop_AllFramesNumbersAreCorrect)
+    r4 <- quickCheckResult (forAll rollsGen prop_AllFramesHaveTwoRollTotalNoGreaterThanTen)
+    if all isSuccess [r1, r2, r3, r4]
         then return ()
         else exitFailure
