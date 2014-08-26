@@ -30,11 +30,10 @@ formatFrameNumber f fw = printf "%-*d" fw fn
 
 isSpareFrame :: Frame -> Bool
 isSpareFrame f =
-    twoRolls == maxPins
+    r1 < maxPins && r1 + r2 == maxPins
     where
-        twoRolls =
-            (fromMaybe 11 $ firstRoll f) +
-            (fromMaybe 11 $ secondRoll f)
+        r1 = (fromMaybe 0 $ firstRoll f)
+        r2 = (fromMaybe 0 $ secondRoll f)
 
 noRollSymbol = " "
 gutterSymbol = "-"
@@ -118,7 +117,7 @@ formatLastFrame f lines = combineLines lines [
         rt = formatRunningTotal f 6
 
 formatFrame2 :: Lines -> Frame -> Lines
-formatFrame2 lines f = 
+formatFrame2 lines f =
     addFrameSeperator $
     if isLastFrame f
         then formatLastFrame f lines
