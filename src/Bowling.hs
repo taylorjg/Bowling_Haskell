@@ -5,10 +5,12 @@ module Bowling (
     Rolls,
     Frames,
     processRolls,
-    isLastFrame,
     maxPins,
     maxFrames,
-    frameDefault
+    frameDefault,
+    isLastFrame,
+    isSpareFrame,
+    isStrikeFrame
     ) where
 
 import Data.List
@@ -42,8 +44,18 @@ type Roll = Int
 type Rolls = [Roll]
 type Frames = [Frame]
 
-isStrike :: Roll -> Bool
-isStrike roll = roll == maxPins
+isSpareFrame :: Frame -> Bool
+isSpareFrame f =
+    r1 < maxPins && r1 + r2 == maxPins
+    where
+        r1 = (fromMaybe 0 $ firstRoll f)
+        r2 = (fromMaybe 0 $ secondRoll f)
+
+isStrikeFrame :: Frame -> Bool
+isStrikeFrame f =
+    case firstRoll f of
+        Just maxPins -> True
+        otherwise -> False
 
 isLastFrame :: Frame -> Bool
 isLastFrame f = frameNumber f == maxFrames
@@ -55,12 +67,15 @@ frameScore f =
     (fromMaybe 0 $ thirdRoll f) +
     (sum $ bonusBalls f)
 
+isStrikeRoll :: Roll -> Bool
+isStrikeRoll roll = roll == maxPins
+
 applyRollToFrame :: Frame -> Roll -> Maybe RunningTotal -> (Frame, Bool, Maybe RunningTotal)
 
 applyRollToFrame f@Frame {frameState = ReadyForFirstRoll} roll rt = 
     (f', True, Nothing)
     where
-        frameState' = if isStrike roll then StrikeNeedTwoMore else ReadyForSecondRoll
+        frameState' = if isStrikeRoll roll then StrikeNeedTwoMore else ReadyForSecondRoll
         f' = f { 
             frameState = frameState', 
             firstRoll = Just roll}
