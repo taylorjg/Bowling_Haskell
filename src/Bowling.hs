@@ -35,7 +35,6 @@ data Frame = Frame {
     runningTotal :: Maybe RunningTotal,
     firstRoll :: Maybe Roll,
     secondRoll :: Maybe Roll,
-    thirdRoll :: Maybe Roll,
     bonusBalls :: [Roll]}
     deriving Show
 
@@ -54,7 +53,7 @@ isSpareFrame f =
 isStrikeFrame :: Frame -> Bool
 isStrikeFrame f =
     case firstRoll f of
-        Just maxPins -> True
+        Just x -> x == maxPins
         otherwise -> False
 
 isLastFrame :: Frame -> Bool
@@ -64,7 +63,6 @@ frameScore :: Frame -> Int
 frameScore f =
     (fromMaybe 0 $ firstRoll f) +
     (fromMaybe 0 $ secondRoll f) +
-    (fromMaybe 0 $ thirdRoll f) +
     (sum $ bonusBalls f)
 
 isStrikeRoll :: Roll -> Bool
@@ -96,42 +94,36 @@ applyRollToFrame f@Frame {frameState = SpareNeedOneMore} roll rt =
     (f', consumedBall, rt')
     where
         consumedBall = isLastFrame f
-        thirdRoll' = if consumedBall then Just roll else Nothing
-        bonusBalls' = if consumedBall then [] else [roll]
+        bonusBalls' = (bonusBalls f) ++ [roll]
         frameState' = Complete
         newScore = frameScore f + roll
         rt' = (+newScore) `liftM` rt
         f' = f { 
             frameState = frameState', 
             runningTotal = rt',
-            thirdRoll = thirdRoll',
             bonusBalls = bonusBalls'}
 
 applyRollToFrame f@Frame {frameState = StrikeNeedTwoMore} roll rt = 
     (f', consumedBall, Nothing)
     where
         consumedBall = isLastFrame f
-        secondRoll' = if consumedBall then Just roll else Nothing
-        bonusBalls' = if consumedBall then [] else [roll]
+        bonusBalls' = (bonusBalls f) ++ [roll]
         frameState' = StrikeNeedOneMore
         f' = f { 
             frameState = frameState', 
-            secondRoll = secondRoll',
             bonusBalls = bonusBalls'}
 
 applyRollToFrame f@Frame {frameState = StrikeNeedOneMore} roll rt = 
     (f', consumedBall, rt')
     where
         consumedBall = isLastFrame f
-        thirdRoll' = if consumedBall then Just roll else Nothing
-        bonusBalls' = if consumedBall then [] else (bonusBalls f) ++ [roll]
+        bonusBalls' = (bonusBalls f) ++ [roll]
         frameState' = Complete
         newScore = frameScore f + roll
         rt' = (+newScore) `liftM` rt
         f' = f { 
             frameState = frameState', 
             runningTotal = rt',
-            thirdRoll = thirdRoll',
             bonusBalls = bonusBalls'}
 
 applyRollToFrame f@Frame {frameState = Complete} roll rt = 
@@ -160,7 +152,6 @@ frameDefault = Frame {
     runningTotal = Nothing,
     firstRoll = Nothing,
     secondRoll = Nothing,
-    thirdRoll = Nothing,
     bonusBalls = []}
 
 processRolls :: Rolls -> Frames

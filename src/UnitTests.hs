@@ -11,7 +11,7 @@ assertFrame frames fn f2 = do
     assertEqual' "wrong runningTotal" (runningTotal f2) (runningTotal f1)
     assertEqual' "wrong firstRoll" (firstRoll f2) (firstRoll f1)
     assertEqual' "wrong secondRoll" (secondRoll f2) (secondRoll f1)
-    assertEqual' "wrong thirdRoll" (thirdRoll f2) (thirdRoll f1)
+    --assertEqual' "wrong thirdRoll" (thirdRoll f2) (thirdRoll f1)
     assertEqual' "wrong bonusBalls" (bonusBalls f2) (bonusBalls f1)
 
 testEmptyListOfRolls = TestCase $ do
@@ -112,8 +112,8 @@ testLastFrameSpareWithBonusBall = TestCase $ do
             frameNumber = 10,
             runningTotal = Just 15,
             firstRoll = Just 8,
-            secondRoll = Just 2,
-            thirdRoll = Just 5}
+            secondRoll = Just 2}
+            --thirdRoll = Just 5
 
 testLastFrameStrikeWithoutBonusBalls = TestCase $ do
     assertFrame frames 10 expectedFrame
@@ -140,8 +140,8 @@ testLastFrameStrikeWithBothBonusBalls = TestCase $ do
             frameNumber = 10,
             runningTotal = Just 16,
             firstRoll = Just 10,
-            secondRoll = Just 4,
-            thirdRoll = Just 2}
+            secondRoll = Just 4}
+            --thirdRoll = Just 2
 
 tests = TestList [
         TestLabel "testEmptyListOfRolls" testEmptyListOfRolls,

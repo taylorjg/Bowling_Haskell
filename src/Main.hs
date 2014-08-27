@@ -16,7 +16,6 @@ formatFrame1 f =
         (show $ runningTotal f),
         (show $ firstRoll f),
         (show $ secondRoll f),
-        (show $ thirdRoll f),
         (show $ bonusBalls f)
     ] ++
     " }"
@@ -46,11 +45,22 @@ formatFirstRoll = formatRoll . firstRoll
 
 formatSecondRoll :: Frame -> String
 formatSecondRoll f =
-    if isSpareFrame f then spareSymbol
-    else formatRoll $ secondRoll f
+    case flags of
+        (True, False, False) -> noRollSymbol
+        (True, False, True) -> formatRoll $ Just ((bonusBalls f) !! 0)
+        (False, True, _) -> spareSymbol
+        (False, False, _) -> formatRoll $ secondRoll f
+    where
+        flags = (isStrikeFrame f, isSpareFrame f, isLastFrame f)
 
 formatThirdRoll :: Frame -> String
-formatThirdRoll = formatRoll . thirdRoll
+formatThirdRoll f =
+    case flags of
+        (True, False) -> formatRoll $ Just ((bonusBalls f) !! 1)
+        (False, True) -> formatRoll $ Just ((bonusBalls f) !! 0)
+        (False, False) -> noRollSymbol
+    where
+        flags = (isStrikeFrame f, isSpareFrame f)
 
 formatRunningTotal :: Frame -> Int -> String
 formatRunningTotal f fw =

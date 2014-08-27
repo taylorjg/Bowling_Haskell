@@ -9,8 +9,8 @@ prop_FrameIntegrityAfterOneRoll :: Rolls -> Bool
 prop_FrameIntegrityAfterOneRoll rolls =
     runningTotal f1 == Nothing &&
     firstRoll f1 == Just r1 &&
-    secondRoll f1 == Nothing &&
-    thirdRoll f1 == Nothing
+    secondRoll f1 == Nothing -- &&
+    --thirdRoll f1 == Nothing
     where
         frames = processRolls $ take 1 rolls
         f1 = frames !! 0
@@ -21,13 +21,13 @@ prop_FrameIntegrityAfterTwoRolls rolls =
     if r1 == maxPins then
             runningTotal f1 == Nothing &&
             firstRoll f1 == Just r1 &&
-            secondRoll f1 == Nothing &&
-            thirdRoll f1 == Nothing
+            secondRoll f1 == Nothing -- &&
+            --thirdRoll f1 == Nothing
     else
         runningTotal f1 == (if r1 + r2 == maxPins then Nothing else Just (r1 + r2)) &&
         firstRoll f1 == Just r1 &&
-        secondRoll f1 == Just r2 &&
-        thirdRoll f1 == Nothing
+        secondRoll f1 == Just r2 -- &&
+        -- thirdRoll f1 == Nothing
     where
         frames = processRolls $ take 2 rolls
         f1 = frames !! 0
