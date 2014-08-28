@@ -16,7 +16,6 @@ module Bowling (
 import Data.List
 import qualified Data.Map as Map
 import Data.Maybe
-import Control.Monad (liftM)
 
 maxPins = 10
 maxFrames = 10
@@ -38,6 +37,14 @@ data Frame = Frame {
     secondRoll :: Maybe Roll,
     bonusBalls :: Rolls}
     deriving Show
+
+frameDefault = Frame {
+    frameNumber = undefined,
+    frameState = ReadyForFirstRoll,
+    runningTotal = Nothing,
+    firstRoll = Nothing,
+    secondRoll = Nothing,
+    bonusBalls = []}
 
 type RunningTotal = Int
 type Roll = Int
@@ -71,125 +78,99 @@ frameScore f =
 
 data StateMachineRow = StateMachineRow {
     stateFn :: Frame -> Roll -> FrameState,
-    runningTotalFn :: Frame -> Roll -> Maybe RunningTotal,
+    runningTotalFn :: Frame -> Roll -> Maybe RunningTotal -> Maybe RunningTotal,
     firstRollFn :: Frame -> Roll -> Maybe Roll,
     secondRollFn :: Frame -> Roll -> Maybe Roll,
     bonusBallsFn :: Frame -> Roll -> Rolls,
     consumedBallFn :: Frame -> Roll -> Bool}
 
+twoRollsMakeSpare :: Frame -> Roll -> Bool
+twoRollsMakeSpare f r = (fromMaybe 0 $ firstRoll f) + r == maxPins
+
+calcNewRunningTotal :: Frame -> Roll -> Maybe RunningTotal -> Maybe RunningTotal
+calcNewRunningTotal f r (Just rt) = Just $ frameScore f + r + rt
+calcNewRunningTotal _ _ Nothing = Nothing
+
+noChangeFrameState :: Frame -> FrameState
+noChangeFrameState f = frameState f
+
+noChangeRunningTotal :: Frame -> Maybe RunningTotal
+noChangeRunningTotal f = runningTotal f
+
+noChangeFirstRoll :: Frame -> Maybe Roll
+noChangeFirstRoll f = firstRoll f
+
+noChangeSecondRoll :: Frame -> Maybe Roll
+noChangeSecondRoll f = secondRoll f
+
+noChangeBonusBalls :: Frame -> Rolls
+noChangeBonusBalls f = bonusBalls f
+
 stateMachine = Map.fromList [
 
         (ReadyForFirstRoll, StateMachineRow {
             stateFn = \_ r -> if isStrikeRoll r then StrikeNeedTwoMore else ReadyForSecondRoll,
-            runningTotalFn = \_ _ -> Nothing,
+            runningTotalFn = \_ _ _ -> Nothing,
             firstRollFn = \f r -> Just r,
             secondRollFn = \f _ -> Nothing,
             bonusBallsFn = \f _ -> [],
             consumedBallFn = \f _ -> True}),
 
         (ReadyForSecondRoll, StateMachineRow {
-            stateFn = \_ _ -> Complete, -- TODO
-            runningTotalFn = \f _ -> runningTotal f, -- TODO
-            firstRollFn = \f _ -> firstRoll f,
+            stateFn = \f r -> if twoRollsMakeSpare f r then SpareNeedOneMore else Complete,
+            runningTotalFn = \f r rt -> if twoRollsMakeSpare f r then Nothing else calcNewRunningTotal f r rt, 
+            firstRollFn = \f _ -> noChangeFirstRoll f,
             secondRollFn = \f r -> Just r,
             bonusBallsFn = \f _ -> [],
             consumedBallFn = \f _ -> True}),
 
         (SpareNeedOneMore, StateMachineRow {
             stateFn = \_ _ -> Complete,
-            runningTotalFn = \f _ -> runningTotal f, -- TODO
-            firstRollFn = \f _ -> firstRoll f,
-            secondRollFn = \f _ -> secondRoll f,
+            runningTotalFn = \f r rt -> calcNewRunningTotal f r rt,
+            firstRollFn = \f _ -> noChangeFirstRoll f,
+            secondRollFn = \f _ -> noChangeSecondRoll f,
             bonusBallsFn = \f r -> (bonusBalls f) ++ [r],
             consumedBallFn = \f _ -> isLastFrame f}),
 
         (StrikeNeedTwoMore, StateMachineRow {
             stateFn = \_ _ -> StrikeNeedOneMore,
-            runningTotalFn = \_ _ -> Nothing,
-            firstRollFn = \f _ -> firstRoll f,
-            secondRollFn = \f _ -> secondRoll f,
+            runningTotalFn = \_ _ _ -> Nothing,
+            firstRollFn = \f _ -> noChangeFirstRoll f,
+            secondRollFn = \f _ -> noChangeSecondRoll f,
             bonusBallsFn = \f r -> (bonusBalls f) ++ [r],
             consumedBallFn = \f _ -> isLastFrame f}),
 
         (StrikeNeedOneMore, StateMachineRow {
             stateFn = \_ _ -> Complete,
-            runningTotalFn = \f _ -> runningTotal f, -- TODO
-            firstRollFn = \f _ -> firstRoll f,
-            secondRollFn = \f _ -> secondRoll f,
+            runningTotalFn = \f r rt -> calcNewRunningTotal f r rt,
+            firstRollFn = \f _ -> noChangeFirstRoll f,
+            secondRollFn = \f _ -> noChangeSecondRoll f,
             bonusBallsFn = \f r -> (bonusBalls f) ++ [r],
             consumedBallFn = \f _ -> isLastFrame f}),
 
         (Complete, StateMachineRow {
-            stateFn = \f _ -> frameState f,
-            runningTotalFn = \f _ -> runningTotal f,
-            firstRollFn = \f _ -> firstRoll f,
-            secondRollFn = \f _ -> secondRoll f,
-            bonusBallsFn = \f _ -> bonusBalls f,
+            stateFn = \f _ -> noChangeFrameState f,
+            runningTotalFn = \f _ _ -> noChangeRunningTotal f,
+            firstRollFn = \f _ -> noChangeFirstRoll f,
+            secondRollFn = \f _ -> noChangeSecondRoll f,
+            bonusBallsFn = \f _ -> noChangeBonusBalls f,
             consumedBallFn = \f _ -> False})
     ]
 
 applyRollToFrame :: Frame -> Roll -> Maybe RunningTotal -> (Frame, Bool, Maybe RunningTotal)
 
-applyRollToFrame f@Frame {frameState = ReadyForFirstRoll} roll rt =
-    (f', True, Nothing)
+applyRollToFrame f r rt =
+    (f', consumedBall, runningTotal f')
     where
-        frameState' = if isStrikeRoll roll then StrikeNeedTwoMore else ReadyForSecondRoll
+        fs = frameState f
+        smr = fromJust $ Map.lookup fs stateMachine
         f' = f {
-            frameState = frameState',
-            firstRoll = Just roll}
-
-applyRollToFrame f@Frame {frameState = ReadyForSecondRoll} roll rt =
-    (f', True, rt')
-    where
-        newScore = frameScore f + roll
-        isSpare = newScore == maxPins
-        frameState' = if isSpare then SpareNeedOneMore else Complete
-        rt' = rt >>= (\x -> if isSpare then Nothing else Just (x + newScore))
-        f' = f {
-            frameState = frameState',
-            runningTotal = rt',
-            secondRoll = Just roll}
-
-applyRollToFrame f@Frame {frameState = SpareNeedOneMore} roll rt =
-    (f', consumedBall, rt')
-    where
-        consumedBall = isLastFrame f
-        bonusBalls' = (bonusBalls f) ++ [roll]
-        frameState' = Complete
-        newScore = frameScore f + roll
-        rt' = (+newScore) `liftM` rt
-        f' = f {
-            frameState = frameState',
-            runningTotal = rt',
-            bonusBalls = bonusBalls'}
-
-applyRollToFrame f@Frame {frameState = StrikeNeedTwoMore} roll rt =
-    (f', consumedBall, Nothing)
-    where
-        consumedBall = isLastFrame f
-        bonusBalls' = (bonusBalls f) ++ [roll]
-        frameState' = StrikeNeedOneMore
-        f' = f {
-            frameState = frameState',
-            bonusBalls = bonusBalls'}
-
-applyRollToFrame f@Frame {frameState = StrikeNeedOneMore} roll rt =
-    (f', consumedBall, rt')
-    where
-        consumedBall = isLastFrame f
-        bonusBalls' = (bonusBalls f) ++ [roll]
-        frameState' = Complete
-        newScore = frameScore f + roll
-        rt' = (+newScore) `liftM` rt
-        f' = f {
-            frameState = frameState',
-            runningTotal = rt',
-            bonusBalls = bonusBalls'}
-
-applyRollToFrame f@Frame {frameState = Complete} roll rt =
-    (f, False, newScore)
-    where
-        newScore = (+ frameScore f) `liftM` rt
+            frameState = (stateFn smr) f r,
+            runningTotal = (runningTotalFn smr) f r rt,
+            firstRoll = (firstRollFn smr) f r,
+            secondRoll = (secondRollFn smr) f r,
+            bonusBalls = (bonusBallsFn smr) f r}
+        consumedBall = (consumedBallFn smr) f r
 
 fstOfTriple :: (a, b, c) -> a
 fstOfTriple (a, _, _) = a
@@ -205,14 +186,6 @@ processRoll fs roll =
                 (f' : fs', consumedBall', rt')
             where
                 (f', consumedBall', rt') = applyRollToFrame f roll rt
-
-frameDefault = Frame {
-    frameNumber = undefined,
-    frameState = ReadyForFirstRoll,
-    runningTotal = Nothing,
-    firstRoll = Nothing,
-    secondRoll = Nothing,
-    bonusBalls = []}
 
 processRolls :: Rolls -> Frames
 processRolls rolls =
