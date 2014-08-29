@@ -1,14 +1,21 @@
 module Bowling (
-    Frame(..),
-    FrameState(..),
-    RunningTotal,
+    Frame,
+    Frames,
     Roll,
     Rolls,
-    Frames,
+    RunningTotal,
+    FrameState(..),
+    frameNumber,
+    frameState,
+    runningTotal,
+    firstRoll,
+    secondRoll,
+    thirdRoll,
+    numBonusBallsNeeded,
+    bonusBalls,
     processRolls,
     maxPins,
     maxFrames,
-    frameDefault,
     isLastFrame,
     isSpareFrame,
     isStrikeFrame
@@ -29,28 +36,52 @@ data FrameState
     deriving (Eq, Show, Ord)
 
 data Frame = Frame {
-    frameNumber :: Int,
-    frameState :: FrameState,
-    runningTotal :: Maybe RunningTotal,
-    firstRoll :: Maybe Roll,
-    secondRoll :: Maybe Roll,
-    numBonusBallsNeeded :: Int,
-    bonusBalls :: Rolls}
+    fFrameNumber :: Int,
+    fFrameState :: FrameState,
+    fRunningTotal :: Maybe RunningTotal,
+    fFirstRoll :: Maybe Roll,
+    fSecondRoll :: Maybe Roll,
+    fNumBonusBallsNeeded :: Int,
+    fBonusBalls :: Rolls}
     deriving Show
 
 frameDefault = Frame {
-    frameNumber = undefined,
-    frameState = ReadyForFirstRoll,
-    runningTotal = Nothing,
-    firstRoll = Nothing,
-    secondRoll = Nothing,
-    numBonusBallsNeeded = 0,
-    bonusBalls = []}
+    fFrameNumber = undefined,
+    fFrameState = ReadyForFirstRoll,
+    fRunningTotal = Nothing,
+    fFirstRoll = Nothing,
+    fSecondRoll = Nothing,
+    fNumBonusBallsNeeded = 0,
+    fBonusBalls = []}
 
-type RunningTotal = Int
+frameNumber :: Frame -> Int
+frameNumber = fFrameNumber
+
+frameState :: Frame -> FrameState
+frameState = fFrameState
+
+runningTotal :: Frame -> Maybe RunningTotal
+runningTotal = fRunningTotal
+
+firstRoll :: Frame -> Maybe Roll
+firstRoll = fFirstRoll
+
+secondRoll :: Frame -> Maybe Roll
+secondRoll = fSecondRoll
+
+thirdRoll :: Frame -> Maybe Roll
+thirdRoll f = Nothing
+
+numBonusBallsNeeded :: Frame -> Int
+numBonusBallsNeeded = fNumBonusBallsNeeded
+
+bonusBalls :: Frame -> Rolls
+bonusBalls = fBonusBalls
+
+type Frames = [Frame]
 type Roll = Int
 type Rolls = [Roll]
-type Frames = [Frame]
+type RunningTotal = Int
 
 isSpareFrame :: Frame -> Bool
 isSpareFrame f =
@@ -124,7 +155,7 @@ stateMachine = Map.fromList [
             stateFn = \f _ -> if numBonusBallsNeeded f == 1 then Complete else NeedBonusBalls,
             runningTotalFn = \f r rt -> if numBonusBallsNeeded f == 1 then calcNewRunningTotal f r rt else Nothing,            firstRollFn = noChangeFirstRoll,
             secondRollFn = noChangeSecondRoll,
-            numBonusBallsNeededFn = \f _ -> (numBonusBallsNeeded f) - 1,
+            numBonusBallsNeededFn = \f _ -> pred $ numBonusBallsNeeded f,
             bonusBallsFn = \f r -> (bonusBalls f) ++ [r],
             consumedBallFn = \f _ -> isLastFrame f}),
 
@@ -145,12 +176,12 @@ applyRollToFrame f r rt =
         fs = frameState f
         smr = fromJust $ Map.lookup fs stateMachine
         f' = f {
-            frameState = (stateFn smr) f r,
-            runningTotal = (runningTotalFn smr) f r rt,
-            firstRoll = (firstRollFn smr) f r,
-            secondRoll = (secondRollFn smr) f r,
-            numBonusBallsNeeded = (numBonusBallsNeededFn smr) f r,
-            bonusBalls = (bonusBallsFn smr) f r}
+            fFrameState = (stateFn smr) f r,
+            fRunningTotal = (runningTotalFn smr) f r rt,
+            fFirstRoll = (firstRollFn smr) f r,
+            fSecondRoll = (secondRollFn smr) f r,
+            fNumBonusBallsNeeded = (numBonusBallsNeededFn smr) f r,
+            fBonusBalls = (bonusBallsFn smr) f r}
         consumedBall = (consumedBallFn smr) f r
 
 fstOfTriple :: (a, b, c) -> a
@@ -172,4 +203,4 @@ processRolls :: Rolls -> Frames
 processRolls rolls =
     foldl processRoll initialFrames rolls
     where
-        initialFrames = [frameDefault { frameNumber = fn } | fn <- [1..maxFrames]]
+        initialFrames = [frameDefault { fFrameNumber = fn } | fn <- [1..maxFrames]]

@@ -228,4 +228,3 @@ main = do
     if errors counts > 0 || failures counts > 0
         then exitFailure
         else return ()
-

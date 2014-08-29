@@ -20,13 +20,13 @@ checkFrameInvariant f =
         r1 = fromMaybe 0 $ firstRoll f
         r2 = fromMaybe 0 $ secondRoll f
 
-prop_ValidInvariantForAllFrames :: Rolls -> Bool
-prop_ValidInvariantForAllFrames rolls =
+prop_FrameInvariantHoldsForAllFrames :: Rolls -> Bool
+prop_FrameInvariantHoldsForAllFrames rolls =
     all checkFrameInvariant frames
     where
         frames = processRolls rolls
 
-nonStrikeFrameRolls = [ [r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10]
+nonStrikeFrameRolls = [[r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10]
 nonStrikeFrameRollsGen = elements nonStrikeFrameRolls
 
 strikeFrameRollsGen = return [10]
@@ -51,7 +51,7 @@ calculateNumBonusBalls [r1, r2]
     
 main :: IO ()
 main = do
-    r1 <- quickCheckResult (forAll rollsGen prop_ValidInvariantForAllFrames)
+    r1 <- quickCheckResult (forAll rollsGen prop_FrameInvariantHoldsForAllFrames)
     if all isSuccess [r1]
         then return ()
         else exitFailure
