@@ -81,8 +81,8 @@ data StateMachineRow = StateMachineRow {
     runningTotalFn :: Frame -> Roll -> Maybe RunningTotal -> Maybe RunningTotal,
     firstRollFn :: Frame -> Roll -> Maybe Roll,
     secondRollFn :: Frame -> Roll -> Maybe Roll,
-    bonusBallsFn :: Frame -> Roll -> Rolls,
     numBonusBallsNeededFn :: Frame -> Roll -> Int,
+    bonusBallsFn :: Frame -> Roll -> Rolls,
     consumedBallFn :: Frame -> Roll -> Bool}
 
 twoRollsMakeSpare :: Frame -> Roll -> Bool
@@ -92,12 +92,12 @@ calcNewRunningTotal :: Frame -> Roll -> Maybe RunningTotal -> Maybe RunningTotal
 calcNewRunningTotal f r (Just rt) = Just $ frameScore f + r + rt
 calcNewRunningTotal _ _ Nothing = Nothing
 
-noChangeFrameState = frameState
-noChangeRunningTotal = runningTotal
-noChangeFirstRoll = firstRoll
-noChangeSecondRoll = secondRoll
-noChangeNumBonusBallsNeeded = numBonusBallsNeeded
-noChangeBonusBalls = bonusBalls
+noChangeFrameState f _ = frameState f
+noChangeRunningTotal f _ _ = runningTotal f
+noChangeFirstRoll f _ = firstRoll f
+noChangeSecondRoll f _ = secondRoll f
+noChangeNumBonusBallsNeeded f _ = numBonusBallsNeeded f
+noChangeBonusBalls f _ = bonusBalls f
 
 stateMachine = Map.fromList [
 
@@ -113,7 +113,7 @@ stateMachine = Map.fromList [
         (ReadyForSecondRoll, StateMachineRow {
             stateFn = \f r -> if twoRollsMakeSpare f r then NeedBonusBalls else Complete,
             runningTotalFn = \f r rt -> if twoRollsMakeSpare f r then Nothing else calcNewRunningTotal f r rt, 
-            firstRollFn = \f _ -> noChangeFirstRoll f,
+            firstRollFn = noChangeFirstRoll,
             secondRollFn = \_ r -> Just r,
             numBonusBallsNeededFn = \f r -> if twoRollsMakeSpare f r then 1 else 0,
             bonusBallsFn = \_ _ -> [],
@@ -121,20 +121,20 @@ stateMachine = Map.fromList [
 
         (NeedBonusBalls, StateMachineRow {
             stateFn = \f _ -> if numBonusBallsNeeded f == 1 then Complete else NeedBonusBalls,
-            runningTotalFn = \f r rt -> if numBonusBallsNeeded f == 1 then calcNewRunningTotal f r rt else Nothing,            firstRollFn = \f _ -> noChangeFirstRoll f,
-            secondRollFn = \f _ -> noChangeSecondRoll f,
+            runningTotalFn = \f r rt -> if numBonusBallsNeeded f == 1 then calcNewRunningTotal f r rt else Nothing,            firstRollFn = noChangeFirstRoll,
+            secondRollFn = noChangeSecondRoll,
             numBonusBallsNeededFn = \f _ -> (numBonusBallsNeeded f) - 1,
             bonusBallsFn = \f r -> (bonusBalls f) ++ [r],
             consumedBallFn = \f _ -> isLastFrame f}),
 
         (Complete, StateMachineRow {
-            stateFn = \f _ -> noChangeFrameState f,
-            runningTotalFn = \f _ _ -> noChangeRunningTotal f,
-            firstRollFn = \f _ -> noChangeFirstRoll f,
-            secondRollFn = \f _ -> noChangeSecondRoll f,
-            numBonusBallsNeededFn = \f _ -> noChangeNumBonusBallsNeeded f,
-            bonusBallsFn = \f _ -> noChangeBonusBalls f,
-            consumedBallFn = \f _ -> False})
+            stateFn = noChangeFrameState,
+            runningTotalFn = noChangeRunningTotal,
+            firstRollFn = noChangeFirstRoll,
+            secondRollFn = noChangeSecondRoll,
+            numBonusBallsNeededFn = noChangeNumBonusBallsNeeded,
+            bonusBallsFn = noChangeBonusBalls,
+            consumedBallFn = \_ _ -> False})
     ]
 
 applyRollToFrame :: Frame -> Roll -> Maybe RunningTotal -> (Frame, Bool, Maybe RunningTotal)
