@@ -1,5 +1,6 @@
 module Bowling (
     Frame(..),
+    FrameState(..),
     RunningTotal,
     Roll,
     Rolls,
@@ -138,7 +139,6 @@ stateMachine = Map.fromList [
     ]
 
 applyRollToFrame :: Frame -> Roll -> Maybe RunningTotal -> (Frame, Bool, Maybe RunningTotal)
-
 applyRollToFrame f r rt =
     (f', consumedBall, runningTotal f')
     where

@@ -2,146 +2,208 @@ import Test.HUnit
 import Bowling
 import System.Exit (exitFailure)
 
-assertFrame :: Frames -> Int -> Frame -> Assertion
-assertFrame frames fn f2 = do
-    let f1 = frames !! (fn - 1)
+assertFrameNumber :: Frames -> Int -> Assertion
+assertFrameNumber frames fn = do
+    let f = frames !! (fn - 1)
     let msgSuffix = " in frame number " ++ show fn
     let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
-    assertEqual' "wrong frameNumber" (frameNumber f2) (frameNumber f1)
-    assertEqual' "wrong runningTotal" (runningTotal f2) (runningTotal f1)
-    assertEqual' "wrong firstRoll" (firstRoll f2) (firstRoll f1)
-    assertEqual' "wrong secondRoll" (secondRoll f2) (secondRoll f1)
-    --assertEqual' "wrong thirdRoll" (thirdRoll f2) (thirdRoll f1)
-    assertEqual' "wrong bonusBalls" (bonusBalls f2) (bonusBalls f1)
+    assertEqual' "wrong frameNumber" fn (frameNumber f)
+
+assertFrameState :: Frames -> Int -> FrameState -> Assertion
+assertFrameState frames fn fs = do
+    let f = frames !! (fn - 1)
+    let msgSuffix = " in frame number " ++ show fn
+    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
+    assertEqual' "wrong frameState" fs (frameState f)
+
+assertRunningTotal :: Frames -> Int -> Maybe RunningTotal -> Assertion
+assertRunningTotal frames fn rt = do
+    let f = frames !! (fn - 1)
+    let msgSuffix = " in frame number " ++ show fn
+    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
+    assertEqual' "wrong runningTotal" rt (runningTotal f)
+
+assertFirstRoll :: Frames -> Int -> Maybe Roll -> Assertion
+assertFirstRoll frames fn r = do
+    let f = frames !! (fn - 1)
+    let msgSuffix = " in frame number " ++ show fn
+    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
+    assertEqual' "wrong firstRoll" r (firstRoll f)
+
+assertSecondRoll :: Frames -> Int -> Maybe Roll -> Assertion
+assertSecondRoll frames fn r = do
+    let f = frames !! (fn - 1)
+    let msgSuffix = " in frame number " ++ show fn
+    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
+    assertEqual' "wrong secondRoll" r (secondRoll f)
+
+assertNumBonusBallsNeeded :: Frames -> Int -> Int -> Assertion
+assertNumBonusBallsNeeded frames fn n = do
+    let f = frames !! (fn - 1)
+    let msgSuffix = " in frame number " ++ show fn
+    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
+    assertEqual' "wrong numBonusBallsNeeded" n (numBonusBallsNeeded f)
+
+assertBonusBalls :: Frames -> Int -> Rolls -> Assertion
+assertBonusBalls frames fn rs = do
+    let f = frames !! (fn - 1)
+    let msgSuffix = " in frame number " ++ show fn
+    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
+    assertEqual' "wrong bonusBalls" rs (bonusBalls f)
 
 testEmptyListOfRolls = TestCase $ do
-    assertFrame frames 1 expectedFrame
+    assertFrameNumber frames 1
+    assertFrameState frames 1 ReadyForFirstRoll
+    assertRunningTotal frames 1 Nothing
+    assertFirstRoll frames 1 Nothing
+    assertSecondRoll frames 1 Nothing
+    assertNumBonusBallsNeeded frames 1 0
+    assertBonusBalls frames 1 []
     where
         frames = processRolls []
-        expectedFrame = frameDefault { frameNumber = 1 }
 
 testSingleRoll = TestCase $ do
-    assertFrame frames 1 expectedFrame
+    assertFrameNumber frames 1
+    assertFrameState frames 1 ReadyForSecondRoll
+    assertRunningTotal frames 1 Nothing
+    assertFirstRoll frames 1 (Just 4)
+    assertSecondRoll frames 1 Nothing
+    assertNumBonusBallsNeeded frames 1 0
+    assertBonusBalls frames 1 []
     where
         frames = processRolls [4]
-        expectedFrame = frameDefault {
-            frameNumber = 1,
-            firstRoll = Just 4}
 
 testUninterestingFirstFrame = TestCase $ do
-    assertFrame frames 1 expectedFrame
+    assertFrameNumber frames 1
+    assertFrameState frames 1 Complete
+    assertRunningTotal frames 1 (Just 9)
+    assertFirstRoll frames 1 (Just 4)
+    assertSecondRoll frames 1 (Just 5)
+    assertNumBonusBallsNeeded frames 1 0
+    assertBonusBalls frames 1 []
     where
         frames = processRolls [4, 5]
-        expectedFrame = frameDefault {
-            frameNumber = 1,
-            runningTotal = Just 9,
-            firstRoll = Just 4,
-            secondRoll = Just 5}
 
 testFirstFrameSpareWithoutBonusBall = TestCase $ do
-    assertFrame frames 1 expectedFrame
+    assertFrameNumber frames 1
+    assertFrameState frames 1 NeedBonusBalls
+    assertRunningTotal frames 1 Nothing
+    assertFirstRoll frames 1 (Just 4)
+    assertSecondRoll frames 1 (Just 6)
+    assertNumBonusBallsNeeded frames 1 1
+    assertBonusBalls frames 1 []
     where
         frames = processRolls [4, 6]
-        expectedFrame = frameDefault {
-            frameNumber = 1,
-            firstRoll = Just 4,
-            secondRoll = Just 6}
 
 testFirstFrameSpareWithBonusBall = TestCase $ do
-    assertFrame frames 1 expectedFrame
+    assertFrameNumber frames 1
+    assertFrameState frames 1 Complete
+    assertRunningTotal frames 1 (Just 15)
+    assertFirstRoll frames 1 (Just 4)
+    assertSecondRoll frames 1 (Just 6)
+    assertNumBonusBallsNeeded frames 1 0
+    assertBonusBalls frames 1 [5]
     where
         frames = processRolls [4, 6, 5]
-        expectedFrame = frameDefault {
-            frameNumber = 1,
-            runningTotal = Just 15,
-            firstRoll = Just 4,
-            secondRoll = Just 6,
-            bonusBalls = [5]}
 
 testFirstFrameStrikeWithoutBonusBalls = TestCase $ do
-    assertFrame frames 1 expectedFrame
+    assertFrameNumber frames 1
+    assertFrameState frames 1 NeedBonusBalls
+    assertRunningTotal frames 1 Nothing
+    assertFirstRoll frames 1 (Just 10)
+    assertSecondRoll frames 1 Nothing
+    assertNumBonusBallsNeeded frames 1 2
+    assertBonusBalls frames 1 []
     where
         frames = processRolls [10]
-        expectedFrame = frameDefault {
-            frameNumber = 1,
-            firstRoll = Just 10}
 
 testFirstFrameStrikeWithFirstBonusBall = TestCase $ do
-    assertFrame frames 1 expectedFrame
+    assertFrameNumber frames 1
+    assertFrameState frames 1 NeedBonusBalls
+    assertRunningTotal frames 1 Nothing
+    assertFirstRoll frames 1 (Just 10)
+    assertSecondRoll frames 1 Nothing
+    assertNumBonusBallsNeeded frames 1 1
+    assertBonusBalls frames 1 [4]
     where
         frames = processRolls [10, 4]
-        expectedFrame = frameDefault {
-            frameNumber = 1,
-            firstRoll = Just 10,
-            bonusBalls = [4]}
 
 testFirstFrameStrikeWithBothBonusBalls = TestCase $ do
-    assertFrame frames 1 expectedFrame
+    assertFrameNumber frames 1
+    assertFrameState frames 1 Complete
+    assertRunningTotal frames 1 (Just 16)
+    assertFirstRoll frames 1 (Just 10)
+    assertSecondRoll frames 1 Nothing
+    assertNumBonusBallsNeeded frames 1 0
+    assertBonusBalls frames 1 [4, 2]
     where
         frames = processRolls [10, 4, 2]
-        expectedFrame = frameDefault {
-            frameNumber = 1,
-            runningTotal = Just 16,
-            firstRoll = Just 10,
-            bonusBalls = [4, 2]}
 
 testUninterestingLastFrame = TestCase $ do
-    assertFrame frames 10 expectedFrame
+    assertFrameNumber frames 10
+    assertFrameState frames 10 Complete
+    assertRunningTotal frames 10 (Just 9)
+    assertFirstRoll frames 10 (Just 4)
+    assertSecondRoll frames 10 (Just 5)
+    assertNumBonusBallsNeeded frames 10 0
+    assertBonusBalls frames 10 []
     where
         frames = processRolls (replicate 18 0 ++ [4, 5])
-        expectedFrame = frameDefault {
-            frameNumber = 10,
-            runningTotal = Just 9,
-            firstRoll = Just 4,
-            secondRoll = Just 5}
 
 testLastFrameSpareWithoutBonusBall = TestCase $ do
-    assertFrame frames 10 expectedFrame
+    assertFrameNumber frames 10
+    assertFrameState frames 10 NeedBonusBalls
+    assertRunningTotal frames 10 Nothing
+    assertFirstRoll frames 10 (Just 8)
+    assertSecondRoll frames 10 (Just 2)
+    assertNumBonusBallsNeeded frames 10 1
+    assertBonusBalls frames 10 []
     where
         frames = processRolls (replicate 18 0 ++ [8, 2])
-        expectedFrame = frameDefault {
-            frameNumber = 10,
-            firstRoll = Just 8,
-            secondRoll = Just 2}
 
 testLastFrameSpareWithBonusBall = TestCase $ do
-    assertFrame frames 10 expectedFrame
+    assertFrameNumber frames 10
+    assertFrameState frames 10 Complete
+    assertRunningTotal frames 10 (Just 15)
+    assertFirstRoll frames 10 (Just 8)
+    assertSecondRoll frames 10 (Just 2)
+    assertNumBonusBallsNeeded frames 10 0
+    assertBonusBalls frames 10 [5]
     where
         frames = processRolls (replicate 18 0 ++ [8, 2, 5])
-        expectedFrame = frameDefault {
-            frameNumber = 10,
-            runningTotal = Just 15,
-            firstRoll = Just 8,
-            secondRoll = Just 2}
-            --thirdRoll = Just 5
 
 testLastFrameStrikeWithoutBonusBalls = TestCase $ do
-    assertFrame frames 10 expectedFrame
+    assertFrameNumber frames 10
+    assertFrameState frames 10 NeedBonusBalls
+    assertRunningTotal frames 10 Nothing
+    assertFirstRoll frames 10 (Just 10)
+    assertSecondRoll frames 10 Nothing
+    assertNumBonusBallsNeeded frames 10 2
+    assertBonusBalls frames 10 []
     where
         frames = processRolls (replicate 18 0 ++ [10])
-        expectedFrame = frameDefault {
-            frameNumber = 10,
-            firstRoll = Just 10}
 
 testLastFrameStrikeWithFirstBonusBall = TestCase $ do
-    assertFrame frames 10 expectedFrame
+    assertFrameNumber frames 10
+    assertFrameState frames 10 NeedBonusBalls
+    assertRunningTotal frames 10 Nothing
+    assertFirstRoll frames 10 (Just 10)
+    assertSecondRoll frames 10 Nothing
+    assertNumBonusBallsNeeded frames 10 1
+    assertBonusBalls frames 10 [4]
     where
         frames = processRolls (replicate 18 0 ++ [10, 4])
-        expectedFrame = frameDefault {
-            frameNumber = 10,
-            firstRoll = Just 10,
-            secondRoll = Just 4}
 
 testLastFrameStrikeWithBothBonusBalls = TestCase $ do
-    assertFrame frames 10 expectedFrame
+    assertFrameNumber frames 10
+    assertFrameState frames 10 Complete
+    assertRunningTotal frames 10 (Just 16)
+    assertFirstRoll frames 10 (Just 10)
+    assertSecondRoll frames 10 Nothing
+    assertNumBonusBallsNeeded frames 10 0
+    assertBonusBalls frames 10 [4, 2]
     where
         frames = processRolls (replicate 18 0 ++ [10, 4, 2])
-        expectedFrame = frameDefault {
-            frameNumber = 10,
-            runningTotal = Just 16,
-            firstRoll = Just 10,
-            secondRoll = Just 4}
-            --thirdRoll = Just 2
 
 tests = TestList [
         TestLabel "testEmptyListOfRolls" testEmptyListOfRolls,
