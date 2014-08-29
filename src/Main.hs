@@ -16,6 +16,7 @@ formatFrame1 f =
         (show $ runningTotal f),
         (show $ firstRoll f),
         (show $ secondRoll f),
+        (show $ numBonusBallsNeeded f),
         (show $ bonusBalls f)
     ] ++
     " }"
