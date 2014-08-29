@@ -56,8 +56,8 @@ isSpareFrame :: Frame -> Bool
 isSpareFrame f =
     r1 < maxPins && r1 + r2 == maxPins
     where
-        r1 = (fromMaybe 0 $ firstRoll f)
-        r2 = (fromMaybe 0 $ secondRoll f)
+        r1 = fromMaybe 0 $ firstRoll f
+        r2 = fromMaybe 0 $ secondRoll f
 
 isStrikeFrame :: Frame -> Bool
 isStrikeFrame f =

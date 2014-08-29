@@ -2,61 +2,29 @@ import Test.QuickCheck
 import Test.QuickCheck.Test
 import System.Random
 import Bowling
-import Control.Monad (join, liftM2)
+import Control.Monad (join)
 import System.Exit (exitFailure)
+import Data.Maybe
 
-prop_FrameInvariant :: Rolls -> Bool
-prop_FrameInvariant rolls =
-    True
+checkFrameInvariant :: Frame -> Bool
+checkFrameInvariant f =
+    frameState f == Complete &&
+    isJust (runningTotal f) &&
+    isJust (firstRoll f) &&
+    numBonusBallsNeeded f == 0 &&
+    r1 + r2 <= maxPins &&
+    if r1 == maxPins then length (bonusBalls f) == 2 else True &&
+    if r1 == maxPins then isNothing (secondRoll f) else True &&
+    if r1 + r2 == maxPins then length (bonusBalls f) == 1 else True
+    where
+        r1 = fromMaybe 0 $ firstRoll f
+        r2 = fromMaybe 0 $ secondRoll f
 
---prop_FrameIntegrityAfterOneRoll :: Rolls -> Bool
---prop_FrameIntegrityAfterOneRoll rolls =
---    runningTotal f1 == Nothing &&
---    firstRoll f1 == Just r1 &&
---    secondRoll f1 == Nothing -- &&
---    --thirdRoll f1 == Nothing
---    where
---        frames = processRolls $ take 1 rolls
---        f1 = frames !! 0
---        r1 = rolls !! 0
-
---prop_FrameIntegrityAfterTwoRolls :: Rolls -> Bool
---prop_FrameIntegrityAfterTwoRolls rolls =
---    if r1 == maxPins then
---            runningTotal f1 == Nothing &&
---            firstRoll f1 == Just r1 &&
---            secondRoll f1 == Nothing -- &&
---            --thirdRoll f1 == Nothing
---    else
---        runningTotal f1 == (if r1 + r2 == maxPins then Nothing else Just (r1 + r2)) &&
---        firstRoll f1 == Just r1 &&
---        secondRoll f1 == Just r2 -- &&
---        -- thirdRoll f1 == Nothing
---    where
---        frames = processRolls $ take 2 rolls
---        f1 = frames !! 0
---        r1 = rolls !! 0
---        r2 = rolls !! 1
-
---prop_AllFramesNumbersAreCorrect :: Rolls -> Bool
---prop_AllFramesNumbersAreCorrect rolls =
---    and [fst p == (frameNumber $ snd p) | p <- pairs]
---    where
---        frames = processRolls rolls
---        pairs = zip [1..] frames
-
--- except the last frame !!!
---prop_AllFramesHaveTwoRollTotalNoGreaterThanTen :: Rolls -> Bool
---prop_AllFramesHaveTwoRollTotalNoGreaterThanTen rolls =
---    result
---    where
---        frames = processRolls rolls
---        pairs = zip (map firstRoll frames) (map secondRoll frames)
---        p = pairs !! 0
---        sum = liftM2 (+) (fst p) (snd p)
---        result = case sum of
---            Nothing -> True
---            Just x -> x <= 10
+prop_ValidInvariantForAllFrames :: Rolls -> Bool
+prop_ValidInvariantForAllFrames rolls =
+    all checkFrameInvariant frames
+    where
+        frames = processRolls rolls
 
 nonStrikeFrameRolls = [ [r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10]
 nonStrikeFrameRollsGen = elements nonStrikeFrameRolls
@@ -83,13 +51,7 @@ calculateNumBonusBalls [r1, r2]
     
 main :: IO ()
 main = do
-    r1 <- quickCheckResult (forAll rollsGen prop_FrameInvariant)
+    r1 <- quickCheckResult (forAll rollsGen prop_ValidInvariantForAllFrames)
     if all isSuccess [r1]
         then return ()
-        else exitFailure--    r1 <- quickCheckResult (forAll rollsGen prop_FrameIntegrityAfterOneRoll)
---    r2 <- quickCheckResult (forAll rollsGen prop_FrameIntegrityAfterTwoRolls)
---    r3 <- quickCheckResult (forAll rollsGen prop_AllFramesNumbersAreCorrect)
---    r4 <- quickCheckResult (forAll rollsGen prop_AllFramesHaveTwoRollTotalNoGreaterThanTen)
---    if all isSuccess [r1, r2, r3, r4]
---        then return ()
---        else exitFailure
+        else exitFailure
