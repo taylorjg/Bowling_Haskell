@@ -4,15 +4,15 @@ module Bowling (
     Roll,
     Rolls,
     RunningTotal,
-    FrameState(..),
+--    FrameState(..),
     frameNumber,
-    frameState,
+--    frameState,
     runningTotal,
     firstRoll,
     secondRoll,
     thirdRoll,
-    numBonusBallsNeeded,
-    bonusBalls,
+--    numBonusBallsNeeded,
+--    bonusBalls,
     processRolls,
     maxPins,
     maxFrames,
@@ -67,10 +67,17 @@ firstRoll :: Frame -> Maybe Roll
 firstRoll = fFirstRoll
 
 secondRoll :: Frame -> Maybe Roll
-secondRoll = fSecondRoll
+secondRoll f =
+    case (isStrikeFrame f, isLastFrame f) of
+        (True, True) -> Just $ fBonusBalls f !! 0
+        otherwise -> fSecondRoll f
 
 thirdRoll :: Frame -> Maybe Roll
-thirdRoll f = Nothing
+thirdRoll f =
+    case (isStrikeFrame f, isSpareFrame f, isLastFrame f) of
+        (True, False, True) -> Just $ fBonusBalls f !! 1
+        (False, True, True) -> Just $ fBonusBalls f !! 0
+        otherwise -> Nothing
 
 numBonusBallsNeeded :: Frame -> Int
 numBonusBallsNeeded = fNumBonusBallsNeeded
@@ -87,26 +94,26 @@ isSpareFrame :: Frame -> Bool
 isSpareFrame f =
     r1 < maxPins && r1 + r2 == maxPins
     where
-        r1 = fromMaybe 0 $ firstRoll f
-        r2 = fromMaybe 0 $ secondRoll f
+        r1 = fromMaybe 0 $ fFirstRoll f
+        r2 = fromMaybe 0 $ fSecondRoll f
 
 isStrikeFrame :: Frame -> Bool
 isStrikeFrame f =
-    case firstRoll f of
+    case fFirstRoll f of
         Just x -> x == maxPins
         otherwise -> False
 
 isLastFrame :: Frame -> Bool
-isLastFrame f = frameNumber f == maxFrames
+isLastFrame f = fFrameNumber f == maxFrames
 
 isStrikeRoll :: Roll -> Bool
 isStrikeRoll roll = roll == maxPins
 
 frameScore :: Frame -> Int
 frameScore f =
-    (fromMaybe 0 $ firstRoll f) +
-    (fromMaybe 0 $ secondRoll f) +
-    (sum $ bonusBalls f)
+    (fromMaybe 0 $ fFirstRoll f) +
+    (fromMaybe 0 $ fSecondRoll f) +
+    (sum $ fBonusBalls f)
 
 data StateMachineRow = StateMachineRow {
     stateFn :: Frame -> Roll -> FrameState,
@@ -118,18 +125,18 @@ data StateMachineRow = StateMachineRow {
     consumedBallFn :: Frame -> Roll -> Bool}
 
 twoRollsMakeSpare :: Frame -> Roll -> Bool
-twoRollsMakeSpare f r = (fromMaybe 0 $ firstRoll f) + r == maxPins
+twoRollsMakeSpare f r = (fromMaybe 0 $ fFirstRoll f) + r == maxPins
 
 calcNewRunningTotal :: Frame -> Roll -> Maybe RunningTotal -> Maybe RunningTotal
 calcNewRunningTotal f r (Just rt) = Just $ frameScore f + r + rt
 calcNewRunningTotal _ _ Nothing = Nothing
 
-noChangeFrameState f _ = frameState f
-noChangeRunningTotal f _ _ = runningTotal f
-noChangeFirstRoll f _ = firstRoll f
-noChangeSecondRoll f _ = secondRoll f
-noChangeNumBonusBallsNeeded f _ = numBonusBallsNeeded f
-noChangeBonusBalls f _ = bonusBalls f
+noChangeFrameState f _ = fFrameState f
+noChangeRunningTotal f _ _ = fRunningTotal f
+noChangeFirstRoll f _ = fFirstRoll f
+noChangeSecondRoll f _ = fSecondRoll f
+noChangeNumBonusBallsNeeded f _ = fNumBonusBallsNeeded f
+noChangeBonusBalls f _ = fBonusBalls f
 
 stateMachine = Map.fromList [
 
@@ -152,11 +159,11 @@ stateMachine = Map.fromList [
             consumedBallFn = \_ _ -> True}),
 
         (NeedBonusBalls, StateMachineRow {
-            stateFn = \f _ -> if numBonusBallsNeeded f == 1 then Complete else NeedBonusBalls,
-            runningTotalFn = \f r rt -> if numBonusBallsNeeded f == 1 then calcNewRunningTotal f r rt else Nothing,            firstRollFn = noChangeFirstRoll,
+            stateFn = \f _ -> if fNumBonusBallsNeeded f == 1 then Complete else NeedBonusBalls,
+            runningTotalFn = \f r rt -> if fNumBonusBallsNeeded f == 1 then calcNewRunningTotal f r rt else Nothing,            firstRollFn = noChangeFirstRoll,
             secondRollFn = noChangeSecondRoll,
-            numBonusBallsNeededFn = \f _ -> pred $ numBonusBallsNeeded f,
-            bonusBallsFn = \f r -> (bonusBalls f) ++ [r],
+            numBonusBallsNeededFn = \f _ -> pred $ fNumBonusBallsNeeded f,
+            bonusBallsFn = \f r -> (fBonusBalls f) ++ [r],
             consumedBallFn = \f _ -> isLastFrame f}),
 
         (Complete, StateMachineRow {
@@ -173,7 +180,7 @@ applyRollToFrame :: Frame -> Roll -> Maybe RunningTotal -> (Frame, Bool, Maybe R
 applyRollToFrame f r rt =
     (f', consumedBall, runningTotal f')
     where
-        fs = frameState f
+        fs = fFrameState f
         smr = fromJust $ Map.lookup fs stateMachine
         f' = f {
             fFrameState = (stateFn smr) f r,

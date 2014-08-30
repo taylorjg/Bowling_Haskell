@@ -8,14 +8,14 @@ import Data.Maybe
 
 checkFrameInvariant :: Frame -> Bool
 checkFrameInvariant f =
-    frameState f == Complete &&
+--    frameState f == Complete &&
     isJust (runningTotal f) &&
     isJust (firstRoll f) &&
-    numBonusBallsNeeded f == 0 &&
-    r1 + r2 <= maxPins &&
-    if r1 == maxPins then length (bonusBalls f) == 2 else True &&
-    if r1 == maxPins then isNothing (secondRoll f) else True &&
-    if r1 + r2 == maxPins then length (bonusBalls f) == 1 else True
+--    numBonusBallsNeeded f == 0 &&
+    (not (isLastFrame f) && r1 + r2 <= maxPins) &&
+--    if r1 == maxPins then length (bonusBalls f) == 2 else True &&
+    if r1 == maxPins && not (isLastFrame f) then isNothing (secondRoll f) else True -- &&
+--    if r1 + r2 == maxPins then length (bonusBalls f) == 1 else True
     where
         r1 = fromMaybe 0 $ firstRoll f
         r2 = fromMaybe 0 $ secondRoll f
