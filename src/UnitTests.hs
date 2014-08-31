@@ -6,8 +6,7 @@ assertFrameValue :: (Eq a, Show a) => Frames -> Int -> a -> (Frame -> a) -> Stri
 assertFrameValue fs fn expected actualFn msg = do
     let f = fs !! (fn - 1)
     let msgSuffix = " in frame number " ++ show fn
-    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
-    assertEqual' msg expected (actualFn f)
+    assertEqual (msg ++ msgSuffix) expected (actualFn f)
 
 assertFrameNumber :: Frames -> Int -> Assertion
 assertFrameNumber fs fn =
