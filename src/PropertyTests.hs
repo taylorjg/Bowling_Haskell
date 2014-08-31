@@ -8,14 +8,17 @@ import Data.Maybe
 
 checkFrameInvariant :: Frame -> Bool
 checkFrameInvariant f =
---    frameState f == Complete &&
     isJust (runningTotal f) &&
     isJust (firstRoll f) &&
---    numBonusBallsNeeded f == 0 &&
-    (not (isLastFrame f) && r1 + r2 <= maxPins) &&
---    if r1 == maxPins then length (bonusBalls f) == 2 else True &&
-    if r1 == maxPins && not (isLastFrame f) then isNothing (secondRoll f) else True -- &&
---    if r1 + r2 == maxPins then length (bonusBalls f) == 1 else True
+    if isLastFrame f then
+        isJust (secondRoll f) &&
+        if isStrikeFrame f then isJust (thirdRoll f) else True &&
+        if isSpareFrame f then isJust (thirdRoll f) else True &&
+        if not (isStrikeFrame f) && not (isSpareFrame f) then isNothing (thirdRoll f) else True
+    else
+        r1 + r2 <= maxPins &&
+        if r1 == maxPins then isNothing (secondRoll f) else True &&
+        isNothing (thirdRoll f)
     where
         r1 = fromMaybe 0 $ firstRoll f
         r2 = fromMaybe 0 $ secondRoll f
@@ -40,12 +43,12 @@ rollsGen = do
     let lastFrame = last tenFrames
     let rolls = join tenFrames
     let bonusBalls = join twoFrames
-    let numBonusBalls = calculateNumBonusBalls lastFrame
-    return $ rolls ++ take numBonusBalls bonusBalls
+    let numBonusBallsNeeded = calculateNumBonusBallsNeeded lastFrame
+    return $ rolls ++ take numBonusBallsNeeded bonusBalls
 
-calculateNumBonusBalls :: Rolls -> Int
-calculateNumBonusBalls [maxPins] = 2
-calculateNumBonusBalls [r1, r2]
+calculateNumBonusBallsNeeded :: Rolls -> Int
+calculateNumBonusBallsNeeded [maxPins] = 2
+calculateNumBonusBallsNeeded [r1, r2]
     | r1 + r2 == maxPins = 1
     | otherwise = 0
     

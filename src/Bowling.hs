@@ -4,36 +4,29 @@ module Bowling (
     Roll,
     Rolls,
     RunningTotal,
---    FrameState(..),
     frameNumber,
---    frameState,
     runningTotal,
     firstRoll,
     secondRoll,
     thirdRoll,
---    numBonusBallsNeeded,
---    bonusBalls,
     processRolls,
-    maxPins,
-    maxFrames,
     isLastFrame,
     isSpareFrame,
-    isStrikeFrame
+    isStrikeFrame,
+    maxPins,
+    maxFrames
     ) where
 
 import Data.List
 import qualified Data.Map as Map
 import Data.Maybe
 
-maxPins = 10
-maxFrames = 10
-
 data FrameState
     = ReadyForFirstRoll
     | ReadyForSecondRoll
     | NeedBonusBalls
     | Complete
-    deriving (Eq, Show, Ord)
+    deriving (Eq, Ord)
 
 data Frame = Frame {
     fFrameNumber :: Int,
@@ -43,16 +36,14 @@ data Frame = Frame {
     fSecondRoll :: Maybe Roll,
     fNumBonusBallsNeeded :: Int,
     fBonusBalls :: Rolls}
-    deriving Show
 
-frameDefault = Frame {
-    fFrameNumber = undefined,
-    fFrameState = ReadyForFirstRoll,
-    fRunningTotal = Nothing,
-    fFirstRoll = Nothing,
-    fSecondRoll = Nothing,
-    fNumBonusBallsNeeded = 0,
-    fBonusBalls = []}
+type Frames = [Frame]
+type Roll = Int
+type Rolls = [Roll]
+type RunningTotal = Int
+
+maxPins = 10
+maxFrames = 10
 
 frameNumber :: Frame -> Int
 frameNumber = fFrameNumber
@@ -68,27 +59,16 @@ firstRoll = fFirstRoll
 
 secondRoll :: Frame -> Maybe Roll
 secondRoll f =
-    case (isStrikeFrame f, isLastFrame f) of
-        (True, True) -> Just $ fBonusBalls f !! 0
+    case (isStrikeFrame f, isLastFrame f, not $ null $ fBonusBalls f) of
+        (True, True, True) -> Just $ head $ fBonusBalls f
         otherwise -> fSecondRoll f
 
 thirdRoll :: Frame -> Maybe Roll
 thirdRoll f =
-    case (isStrikeFrame f, isSpareFrame f, isLastFrame f) of
-        (True, False, True) -> Just $ fBonusBalls f !! 1
-        (False, True, True) -> Just $ fBonusBalls f !! 0
+    case (isStrikeFrame f, isSpareFrame f, isLastFrame f, length $ fBonusBalls f) of
+        (True, False, True, 2) -> Just $ last $ fBonusBalls f
+        (False, True, True, 1) -> Just $ head $ fBonusBalls f
         otherwise -> Nothing
-
-numBonusBallsNeeded :: Frame -> Int
-numBonusBallsNeeded = fNumBonusBallsNeeded
-
-bonusBalls :: Frame -> Rolls
-bonusBalls = fBonusBalls
-
-type Frames = [Frame]
-type Roll = Int
-type Rolls = [Roll]
-type RunningTotal = Int
 
 isSpareFrame :: Frame -> Bool
 isSpareFrame f =
@@ -115,15 +95,6 @@ frameScore f =
     (fromMaybe 0 $ fSecondRoll f) +
     (sum $ fBonusBalls f)
 
-data StateMachineRow = StateMachineRow {
-    stateFn :: Frame -> Roll -> FrameState,
-    runningTotalFn :: Frame -> Roll -> Maybe RunningTotal -> Maybe RunningTotal,
-    firstRollFn :: Frame -> Roll -> Maybe Roll,
-    secondRollFn :: Frame -> Roll -> Maybe Roll,
-    numBonusBallsNeededFn :: Frame -> Roll -> Int,
-    bonusBallsFn :: Frame -> Roll -> Rolls,
-    consumedBallFn :: Frame -> Roll -> Bool}
-
 twoRollsMakeSpare :: Frame -> Roll -> Bool
 twoRollsMakeSpare f r = (fromMaybe 0 $ fFirstRoll f) + r == maxPins
 
@@ -137,6 +108,15 @@ noChangeFirstRoll f _ = fFirstRoll f
 noChangeSecondRoll f _ = fSecondRoll f
 noChangeNumBonusBallsNeeded f _ = fNumBonusBallsNeeded f
 noChangeBonusBalls f _ = fBonusBalls f
+
+data StateMachineRow = StateMachineRow {
+    stateFn :: Frame -> Roll -> FrameState,
+    runningTotalFn :: Frame -> Roll -> Maybe RunningTotal -> Maybe RunningTotal,
+    firstRollFn :: Frame -> Roll -> Maybe Roll,
+    secondRollFn :: Frame -> Roll -> Maybe Roll,
+    numBonusBallsNeededFn :: Frame -> Roll -> Int,
+    bonusBallsFn :: Frame -> Roll -> Rolls,
+    consumedBallFn :: Frame -> Roll -> Bool}
 
 stateMachine = Map.fromList [
 
@@ -211,3 +191,12 @@ processRolls rolls =
     foldl processRoll initialFrames rolls
     where
         initialFrames = [frameDefault { fFrameNumber = fn } | fn <- [1..maxFrames]]
+
+frameDefault = Frame {
+    fFrameNumber = undefined,
+    fFrameState = ReadyForFirstRoll,
+    fRunningTotal = Nothing,
+    fFirstRoll = Nothing,
+    fSecondRoll = Nothing,
+    fNumBonusBallsNeeded = 0,
+    fBonusBalls = []}
