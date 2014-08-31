@@ -2,40 +2,32 @@ import Test.HUnit
 import Bowling
 import System.Exit (exitFailure)
 
-assertFrameNumber :: Frames -> Int -> Assertion
-assertFrameNumber frames fn = do
-    let f = frames !! (fn - 1)
+assertFrameValue :: (Eq a, Show a) => Frames -> Int -> a -> (Frame -> a) -> String -> Assertion
+assertFrameValue fs fn expected actualFn msg = do
+    let f = fs !! (fn - 1)
     let msgSuffix = " in frame number " ++ show fn
     let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
-    assertEqual' "wrong frameNumber" fn (frameNumber f)
+    assertEqual' msg expected (actualFn f)
+
+assertFrameNumber :: Frames -> Int -> Assertion
+assertFrameNumber fs fn =
+    assertFrameValue fs fn fn frameNumber "wrong frameNumber"
 
 assertRunningTotal :: Frames -> Int -> Maybe RunningTotal -> Assertion
-assertRunningTotal frames fn rt = do
-    let f = frames !! (fn - 1)
-    let msgSuffix = " in frame number " ++ show fn
-    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
-    assertEqual' "wrong runningTotal" rt (runningTotal f)
+assertRunningTotal fs fn rt =
+    assertFrameValue fs fn rt runningTotal "wrong runningTotal"
 
 assertFirstRoll :: Frames -> Int -> Maybe Roll -> Assertion
-assertFirstRoll frames fn r = do
-    let f = frames !! (fn - 1)
-    let msgSuffix = " in frame number " ++ show fn
-    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
-    assertEqual' "wrong firstRoll" r (firstRoll f)
+assertFirstRoll fs fn r =
+    assertFrameValue fs fn r firstRoll "wrong firstRoll"
 
 assertSecondRoll :: Frames -> Int -> Maybe Roll -> Assertion
-assertSecondRoll frames fn r = do
-    let f = frames !! (fn - 1)
-    let msgSuffix = " in frame number " ++ show fn
-    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
-    assertEqual' "wrong secondRoll" r (secondRoll f)
+assertSecondRoll fs fn r =
+    assertFrameValue fs fn r secondRoll "wrong secondRoll"
 
 assertThirdRoll :: Frames -> Int -> Maybe Roll -> Assertion
-assertThirdRoll frames fn r = do
-    let f = frames !! (fn - 1)
-    let msgSuffix = " in frame number " ++ show fn
-    let assertEqual' msg a b = assertEqual (msg ++ msgSuffix) a b
-    assertEqual' "wrong thirdRoll" r (thirdRoll f)
+assertThirdRoll fs fn r =
+    assertFrameValue fs fn r thirdRoll "wrong thirdRoll"
 
 testEmptyListOfRolls = TestCase $ do
     assertFrameNumber frames 1
