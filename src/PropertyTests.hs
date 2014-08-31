@@ -12,8 +12,7 @@ checkFrameInvariant f =
     isJust (firstRoll f) &&
     if isLastFrame f then
         isJust (secondRoll f) &&
-        if isStrikeFrame f then isJust (thirdRoll f) else True &&
-        if isSpareFrame f then isJust (thirdRoll f) else True &&
+        if isStrikeFrame f || isSpareFrame f then isJust (thirdRoll f) else True &&
         if not (isStrikeFrame f) && not (isSpareFrame f) then isNothing (thirdRoll f) else True
     else
         r1 + r2 <= maxPins &&

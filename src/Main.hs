@@ -50,10 +50,9 @@ formatThirdRoll = formatRoll . thirdRoll
 
 formatRunningTotal :: Frame -> Int -> String
 formatRunningTotal f fw =
-    case rt of
+    case runningTotal f of
         Nothing -> replicate fw ' '
         Just x -> printf "%-*d" fw x
-    where rt = runningTotal f
 
 combineLines :: Lines -> Lines -> Lines
 combineLines lines1 lines2 = zipWith (++) lines1 lines2
