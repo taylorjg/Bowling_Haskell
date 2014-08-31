@@ -13,15 +13,16 @@ I am currently learning Haskell so I decided to translate [my previous attempt a
 ## TODO
 
 * ~~Add unit tests using HUnit~~
-* Add property tests using QuickCheck
+* ~~Add property tests using QuickCheck~~
 * ~~Allow the user to choose from several pre-defined lists of rolls~~
 * Allow the user to enter a custom list of rolls
 * Display a formatted score card:
  * ~~on the console as an ASCII rendering~~
  * as an HTML page (generate an HTML page and open the default browser to display it)
-* Currently, the <code>applyRollToMove</code> function is a bit ugly. Try to improve the structure:
- * maybe introduce different Frame types e.g. one for each frame state?
- * add functions to assist with creating a new frame from an old frame?
+* ~~Currently, the <code>applyRollToMove</code> function is a bit ugly. Try to improve the structure:~~
+ * ~~maybe introduce different Frame types e.g. one for each frame state?~~
+ * ~~add functions to assist with creating a new frame from an old frame?~~
+ * UPDATE: neither of the above two ideas worked - finally improved it (?) by using a state machine
 * ~~Create a separate module for the <code>Frame</code> type and the <code>processRolls</code> function~~
 * add error handling e.g. rolls < 0 or > 10, two rolls in a frame that total > 10, too many rolls, etc.
  * change the signature of <code>processRolls</code> to be <code>Rolls -> Either BowlingError Frames</code> ?
