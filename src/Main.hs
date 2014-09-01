@@ -1,5 +1,4 @@
 import Data.List (intercalate)
-import Data.Maybe (fromMaybe)
 import Bowling
 import System.IO
 import Text.Printf

@@ -16,7 +16,7 @@ checkFrameInvariant f =
         if not (isStrikeFrame f) && not (isSpareFrame f) then isNothing (thirdRoll f) else True
     else
         r1 + r2 <= maxPins &&
-        if r1 == maxPins then isNothing (secondRoll f) else True &&
+        if isStrikeFrame f then isNothing (secondRoll f) else True &&
         isNothing (thirdRoll f)
     where
         r1 = fromMaybe 0 $ firstRoll f
