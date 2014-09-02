@@ -4,6 +4,8 @@ module Bowling (
     Roll,
     Rolls,
     RunningTotal,
+    BowlingError,
+    BowlingResult,
     frameNumber,
     runningTotal,
     firstRoll,
@@ -41,6 +43,8 @@ type Frames = [Frame]
 type Roll = Int
 type Rolls = [Roll]
 type RunningTotal = Int
+type BowlingError = String
+type BowlingResult = Either BowlingError Frames
 
 maxPins = 10
 maxFrames = 10
@@ -156,9 +160,19 @@ stateMachine = Map.fromList [
             consumedBallFn = \_ _ -> False})
     ]
 
-applyRollToFrame :: Frame -> Roll -> Maybe RunningTotal -> (Frame, Bool, Maybe RunningTotal)
+applyRollToFrame :: Frame -> Roll -> Maybe RunningTotal -> (Frame, Bool, Maybe RunningTotal, Maybe BowlingError)
 applyRollToFrame f r rt =
-    (f', consumedBall, runningTotal f')
+    if r < 0 || r > maxPins then
+        (f, False, Nothing, Just $ "Invalid roll: " ++ show r)
+    else
+        let
+            r1 = fromMaybe 0 $ fFirstRoll f'
+            r2 = fromMaybe 0 $ fSecondRoll f'
+        in
+            if r1 + r2 > maxPins then
+                (f, False, Nothing, Just $ "First and second rolls of frame number " ++ (show . fFrameNumber) f' ++ " have a total greater than " ++ show maxPins)
+            else
+                (f', consumedBall, runningTotal f', Nothing)
     where
         fs = fFrameState f
         smr = fromJust $ Map.lookup fs stateMachine
@@ -171,25 +185,37 @@ applyRollToFrame f r rt =
             fBonusBalls = (bonusBallsFn smr) f r}
         consumedBall = (consumedBallFn smr) f r
 
-fstOfTriple :: (a, b, c) -> a
-fstOfTriple (a, _, _) = a
+item1Of4Tuple :: (a, b, c, d) -> a
+item1Of4Tuple (a, _, _, _) = a
 
-processRoll :: Frames -> Roll -> Frames
-processRoll fs roll =
-    reverse . fstOfTriple $ foldl op ([], False, Just 0) fs
+item4Of4Tuple :: (a, b, c, d) -> d
+item4Of4Tuple (_, _, _, d) = d
+
+processRoll :: BowlingResult  -> Roll -> BowlingResult
+processRoll br@(Left _) _ = br
+processRoll (Right fs) roll =
+    case item4 of
+        Just be -> Left be
+        Nothing -> Right . reverse $ item1
     where
-        op (fs', consumedBall, rt) f =
-            if consumedBall then
-                (f : fs', consumedBall, rt)
+        item1 = item1Of4Tuple tuple
+        item4 = item4Of4Tuple tuple
+        tuple = foldl op ([], False, Just 0, Nothing) fs
+        op (fs', consumedBall, rt, be) f =
+            if consumedBall || isJust be then
+                (f : fs', consumedBall, rt, be)
             else
-                (f' : fs', consumedBall', rt')
+                (f' : fs', consumedBall', rt', be')
             where
-                (f', consumedBall', rt') = applyRollToFrame f roll rt
+                (f', consumedBall', rt', be') = applyRollToFrame f roll rt
 
 processRolls :: Rolls -> Frames
 processRolls rolls =
-    foldl processRoll initialFrames rolls
+    case br of
+        Left be -> error be
+        Right fs -> fs
     where
+        br = foldl processRoll (Right initialFrames) rolls
         initialFrames = [frameDefault { fFrameNumber = fn } | fn <- [1..maxFrames]]
 
 frameDefault = Frame {
