@@ -135,7 +135,8 @@ chooseRolls = do
             [10, 7, 3, 7, 2, 9, 1, 10, 10, 10, 2, 3, 6, 4, 7, 3, 3],
             [8, 5],
             [8, 1, 7, 6],
-            [8, 1, 13, 4]]
+            [8, 1, 13, 4],
+            replicate 13 10]
     mapM_ putStrLn $ zipWith (\i rs -> show i ++ ") " ++ show rs) [0..] preDefinedRolls
     putStr "Please choose a list of rolls: "
     hFlush stdout

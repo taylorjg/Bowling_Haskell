@@ -185,29 +185,26 @@ applyRollToFrame f r rt =
             fBonusBalls = (bonusBallsFn smr) f r}
         consumedBall = (consumedBallFn smr) f r
 
-item1Of4Tuple :: (a, b, c, d) -> a
-item1Of4Tuple (a, _, _, _) = a
-
-item4Of4Tuple :: (a, b, c, d) -> d
-item4Of4Tuple (_, _, _, d) = d
-
 processRoll :: BowlingResult  -> Roll -> BowlingResult
-processRoll br@(Left _) _ = br
-processRoll (Right fs) roll =
-    case item4 of
-        Just be -> Left be
-        Nothing -> Right . reverse $ item1
-    where
-        item1 = item1Of4Tuple tuple
-        item4 = item4Of4Tuple tuple
-        tuple = foldl op ([], False, Just 0, Nothing) fs
-        op (fs', consumedBall, rt, be) f =
-            if consumedBall || isJust be then
-                (f : fs', consumedBall, rt, be)
+processRoll (Right fsIn) r =
+    case be of
+        Just msg -> Left msg
+        Nothing ->
+            if isLastFrame (head fsOut) && not consumedBall then
+                Left "Unconsumed rolls at the end of the sequence of rolls"
             else
-                (f' : fs', consumedBall', rt', be')
+                Right . reverse $ fsOut
+    where
+        seed = ([], False, Just 0, Nothing)
+        (fsOut, consumedBall, _, be) = foldl op seed fsIn
+        op (fs, consumedBall, rt, be) f =
+            if consumedBall || isJust be then
+                (f : fs, consumedBall, rt, be)
+            else
+                (f' : fs, consumedBall', rt', be')
             where
-                (f', consumedBall', rt', be') = applyRollToFrame f roll rt
+                (f', consumedBall', rt', be') = applyRollToFrame f r rt
+processRoll br _ = br
 
 processRolls :: Rolls -> Frames
 processRolls rolls =
