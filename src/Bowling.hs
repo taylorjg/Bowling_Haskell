@@ -15,8 +15,7 @@ module Bowling (
     isLastFrame,
     isSpareFrame,
     isStrikeFrame,
-    maxPins,
-    maxFrames
+    maxPins
     ) where
 
 import Data.List
@@ -46,8 +45,9 @@ type RunningTotal = Int
 type BowlingError = String
 type BowlingResult = Either BowlingError Frames
 
+minPins = 0
 maxPins = 10
-maxFrames = 10
+numFrames = 10
 
 frameNumber :: Frame -> Int
 frameNumber = fFrameNumber
@@ -88,7 +88,7 @@ isStrikeFrame f =
         otherwise -> False
 
 isLastFrame :: Frame -> Bool
-isLastFrame f = fFrameNumber f == maxFrames
+isLastFrame f = fFrameNumber f == numFrames
 
 isStrikeRoll :: Roll -> Bool
 isStrikeRoll roll = roll == maxPins
@@ -120,7 +120,7 @@ data StateMachineRow = StateMachineRow {
     secondRollFn :: Frame -> Roll -> Maybe Roll,
     numBonusBallsNeededFn :: Frame -> Roll -> Int,
     bonusBallsFn :: Frame -> Roll -> Rolls,
-    consumedBallFn :: Frame -> Roll -> Bool}
+    consumedFn :: Frame -> Roll -> Bool}
 
 stateMachine = Map.fromList [
 
@@ -131,7 +131,7 @@ stateMachine = Map.fromList [
             secondRollFn = \_ _ -> Nothing,
             numBonusBallsNeededFn = \_ r -> if isStrikeRoll r then 2 else 0,
             bonusBallsFn = \_ _ -> [],
-            consumedBallFn = \_ _ -> True}),
+            consumedFn = \_ _ -> True}),
 
         (ReadyForSecondRoll, StateMachineRow {
             stateFn = \f r -> if twoRollsMakeSpare f r then NeedBonusBalls else Complete,
@@ -140,7 +140,7 @@ stateMachine = Map.fromList [
             secondRollFn = \_ r -> Just r,
             numBonusBallsNeededFn = \f r -> if twoRollsMakeSpare f r then 1 else 0,
             bonusBallsFn = \_ _ -> [],
-            consumedBallFn = \_ _ -> True}),
+            consumedFn = \_ _ -> True}),
 
         (NeedBonusBalls, StateMachineRow {
             stateFn = \f _ -> if fNumBonusBallsNeeded f == 1 then Complete else NeedBonusBalls,
@@ -148,7 +148,7 @@ stateMachine = Map.fromList [
             secondRollFn = noChangeSecondRoll,
             numBonusBallsNeededFn = \f _ -> pred $ fNumBonusBallsNeeded f,
             bonusBallsFn = \f r -> (fBonusBalls f) ++ [r],
-            consumedBallFn = \f _ -> isLastFrame f}),
+            consumedFn = \f _ -> isLastFrame f}),
 
         (Complete, StateMachineRow {
             stateFn = noChangeFrameState,
@@ -157,12 +157,12 @@ stateMachine = Map.fromList [
             secondRollFn = noChangeSecondRoll,
             numBonusBallsNeededFn = noChangeNumBonusBallsNeeded,
             bonusBallsFn = noChangeBonusBalls,
-            consumedBallFn = \_ _ -> False})
+            consumedFn = \_ _ -> False})
     ]
 
 applyRollToFrame :: Frame -> Roll -> Maybe RunningTotal -> (Frame, Bool, Maybe RunningTotal, Maybe BowlingError)
 applyRollToFrame f r rt =
-    if r < 0 || r > maxPins then
+    if r < minPins || r > maxPins then
         (f, False, Nothing, Just $ "Invalid roll: " ++ show r)
     else
         let
@@ -172,7 +172,7 @@ applyRollToFrame f r rt =
             if r1 + r2 > maxPins then
                 (f, False, Nothing, Just $ "First and second rolls of frame number " ++ (show . fFrameNumber) f' ++ " have a total greater than " ++ show maxPins)
             else
-                (f', consumedBall, runningTotal f', Nothing)
+                (f', consumed, runningTotal f', Nothing)
     where
         fs = fFrameState f
         smr = fromJust $ Map.lookup fs stateMachine
@@ -183,27 +183,27 @@ applyRollToFrame f r rt =
             fSecondRoll = (secondRollFn smr) f r,
             fNumBonusBallsNeeded = (numBonusBallsNeededFn smr) f r,
             fBonusBalls = (bonusBallsFn smr) f r}
-        consumedBall = (consumedBallFn smr) f r
+        consumed = (consumedFn smr) f r
 
 processRoll :: BowlingResult  -> Roll -> BowlingResult
 processRoll (Right fsIn) r =
     case be of
         Just be -> Left be
         Nothing ->
-            if fFrameState (head fsOut) == Complete && not consumedBall then
+            if fFrameState (head fsOut) == Complete && not consumed then
                 Left "Unconsumed rolls at the end of the list"
             else
                 Right . reverse $ fsOut
     where
         seed = ([], False, Just 0, Nothing)
-        (fsOut, consumedBall, _, be) = foldl op seed fsIn
-        op (fs, consumedBall, rt, be) f =
-            if consumedBall || isJust be then
-                (f : fs, consumedBall, rt, be)
+        (fsOut, consumed, _, be) = foldl op seed fsIn
+        op (fs, consumed, rt, be) f =
+            if consumed || isJust be then
+                (f : fs, consumed, rt, be)
             else
-                (f' : fs, consumedBall', rt', be')
+                (f' : fs, consumed', rt', be')
             where
-                (f', consumedBall', rt', be') = applyRollToFrame f r rt
+                (f', consumed', rt', be') = applyRollToFrame f r rt
 processRoll br _ = br
 
 processRolls :: Rolls -> Frames
@@ -213,7 +213,7 @@ processRolls rolls =
         Right fs -> fs
     where
         br = foldl processRoll (Right initialFrames) rolls
-        initialFrames = [frameDefault { fFrameNumber = fn } | fn <- [1..maxFrames]]
+        initialFrames = [frameDefault { fFrameNumber = fn } | fn <- [1..numFrames]]
 
 frameDefault = Frame {
     fFrameNumber = undefined,
