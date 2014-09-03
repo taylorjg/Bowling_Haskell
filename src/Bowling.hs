@@ -188,10 +188,10 @@ applyRollToFrame f r rt =
 processRoll :: BowlingResult  -> Roll -> BowlingResult
 processRoll (Right fsIn) r =
     case be of
-        Just msg -> Left msg
+        Just be -> Left be
         Nothing ->
-            if isLastFrame (head fsOut) && not consumedBall then
-                Left "Unconsumed rolls at the end of the sequence of rolls"
+            if fFrameState (head fsOut) == Complete && not consumedBall then
+                Left "Unconsumed rolls at the end of the list"
             else
                 Right . reverse $ fsOut
     where
