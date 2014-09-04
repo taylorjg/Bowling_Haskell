@@ -1,6 +1,7 @@
 import Test.HUnit
 import Bowling
 import System.Exit (exitFailure)
+import Data.Either (isLeft)
 
 assertFrameValue :: (Eq a, Show a) => Frames -> Int -> a -> (Frame -> a) -> String -> Assertion
 assertFrameValue fs fn expected actualFn msg = do
@@ -154,6 +155,51 @@ testLastFrameStrikeWithBothBonusBalls = TestCase $ do
     where
         Right frames = processRolls (replicate 18 0 ++ [10, 4, 2])
 
+testFrame1RollLessThanZeroResultsInAnError = TestCase $ do
+    assertEqual "expected bowling result to indicate that an error occurred" True (isLeft br)
+    where
+        br = processRolls [-1]
+
+testFrame1RollGreaterThanTenResultsInAnError = TestCase $ do
+    assertEqual "expected bowling result to indicate that an error occurred" True (isLeft br)
+    where
+        br = processRolls [11]
+
+testFrame3RollLessThanZeroResultsInAnError = TestCase $ do
+    assertEqual "expected bowling result to indicate that an error occurred" True (isLeft br)
+    where
+        br = processRolls [1, 1, 2, 2, -1]
+
+testFrame3RollGreaterThanTenResultsInAnError = TestCase $ do
+    assertEqual "expected bowling result to indicate that an error occurred" True (isLeft br)
+    where
+        br = processRolls [1, 1, 2, 2, 11]
+
+testFrame1RollTotalGreaterThanTenResultsInAnError = TestCase $ do
+    assertEqual "expected bowling result to indicate that an error occurred" True (isLeft br)
+    where
+        br = processRolls [8, 3]
+
+testFrame3RollTotalGreaterThanTenResultsInAnError = TestCase $ do
+    assertEqual "expected bowling result to indicate that an error occurred" True (isLeft br)
+    where
+        br = processRolls [1, 1, 2, 2, 8, 3]
+
+testRemainingRollAfterUninterestingLastFrameResultsInAnError = TestCase $ do
+    assertEqual "expected bowling result to indicate that an error occurred" True (isLeft br)
+    where
+        br = processRolls (replicate 21 1)
+
+testRemainingRollAfterLastFrameSpareResultsInAnError = TestCase $ do
+    assertEqual "expected bowling result to indicate that an error occurred" True (isLeft br)
+    where
+        br = processRolls (replicate 18 0 ++ [8, 2, 0, 0])
+
+testRemainingRollAfterLastFrameStrikeResultsInAnError = TestCase $ do
+    assertEqual "expected bowling result to indicate that an error occurred" True (isLeft br)
+    where
+        br = processRolls (replicate 18 0 ++ [10, 1, 0, 0])
+
 tests = TestList [
         TestLabel "testEmptyListOfRolls" testEmptyListOfRolls,
         TestLabel "testSingleRoll" testSingleRoll,
@@ -168,7 +214,16 @@ tests = TestList [
         TestLabel "testLastFrameSpareWithBonusBall" testLastFrameSpareWithBonusBall,
         TestLabel "testLastFrameStrikeWithoutBonusBalls" testLastFrameStrikeWithoutBonusBalls,
         TestLabel "testLastFrameStrikeWithFirstBonusBall" testLastFrameStrikeWithFirstBonusBall,
-        TestLabel "testLastFrameStrikeWithBothBonusBalls" testLastFrameStrikeWithBothBonusBalls
+        TestLabel "testLastFrameStrikeWithBothBonusBalls" testLastFrameStrikeWithBothBonusBalls,
+        TestLabel "testFrame1RollLessThanZeroResultsInAnError" testFrame1RollLessThanZeroResultsInAnError,
+        TestLabel "testFrame1RollGreaterThanTenResultsInAnError" testFrame1RollGreaterThanTenResultsInAnError,
+        TestLabel "testFrame3RollLessThanZeroResultsInAnError" testFrame3RollLessThanZeroResultsInAnError,
+        TestLabel "testFrame3RollGreaterThanTenResultsInAnError" testFrame3RollGreaterThanTenResultsInAnError,
+        TestLabel "testFrame1RollTotalGreaterThanTenResultsInAnError" testFrame1RollTotalGreaterThanTenResultsInAnError,
+        TestLabel "testFrame3RollTotalGreaterThanTenResultsInAnError" testFrame3RollTotalGreaterThanTenResultsInAnError,
+        TestLabel "testRemainingRollAfterUninterestingLastFrameResultsInAnError" testRemainingRollAfterUninterestingLastFrameResultsInAnError,
+        TestLabel "testRemainingRollAfterLastFrameSpareResultsInAnError" testRemainingRollAfterLastFrameSpareResultsInAnError,
+        TestLabel "testRemainingRollAfterLastFrameStrikeResultsInAnError" testRemainingRollAfterLastFrameStrikeResultsInAnError
     ]
 
 main :: IO ()
