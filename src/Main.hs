@@ -145,8 +145,7 @@ chooseRolls = do
 
 main = do
     rolls <- chooseRolls
-    let br = processRolls rolls
-    case br of
+    case processRolls rolls of
         Left be -> putStrLn be
         Right frames -> do
             mapM_ putStrLn $ formatFrames1 frames
