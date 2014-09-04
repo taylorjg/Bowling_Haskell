@@ -26,7 +26,7 @@ prop_FrameInvariantHoldsForAllFrames :: Rolls -> Bool
 prop_FrameInvariantHoldsForAllFrames rolls =
     all checkFrameInvariant frames
     where
-        frames = processRolls rolls
+        Right frames = processRolls rolls
 
 nonStrikeFrameRolls = [[r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10]
 nonStrikeFrameRollsGen = elements nonStrikeFrameRolls
@@ -50,7 +50,7 @@ calculateNumBonusBallsNeeded [maxPins] = 2
 calculateNumBonusBallsNeeded [r1, r2]
     | r1 + r2 == maxPins = 1
     | otherwise = 0
-    
+
 main :: IO ()
 main = do
     r1 <- quickCheckResult (forAll rollsGen prop_FrameInvariantHoldsForAllFrames)

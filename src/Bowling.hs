@@ -206,13 +206,10 @@ processRoll (Right fsIn) r =
                 (f', consumed', rt', be') = applyRollToFrame f r rt
 processRoll br _ = br
 
-processRolls :: Rolls -> Frames
+processRolls :: Rolls -> BowlingResult
 processRolls rolls =
-    case br of
-        Left be -> error be
-        Right fs -> fs
+    foldl processRoll (Right initialFrames) rolls
     where
-        br = foldl processRoll (Right initialFrames) rolls
         initialFrames = [frameDefault { fFrameNumber = fn } | fn <- [1..numFrames]]
 
 frameDefault = Frame {

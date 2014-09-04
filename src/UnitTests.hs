@@ -35,7 +35,7 @@ testEmptyListOfRolls = TestCase $ do
     assertSecondRoll frames 1 Nothing
     assertThirdRoll frames 1 Nothing
     where
-        frames = processRolls []
+        Right frames = processRolls []
 
 testSingleRoll = TestCase $ do
     assertFrameNumber frames 1
@@ -44,7 +44,7 @@ testSingleRoll = TestCase $ do
     assertSecondRoll frames 1 Nothing
     assertThirdRoll frames 1 Nothing
     where
-        frames = processRolls [4]
+        Right frames = processRolls [4]
 
 testUninterestingFirstFrame = TestCase $ do
     assertFrameNumber frames 1
@@ -53,7 +53,7 @@ testUninterestingFirstFrame = TestCase $ do
     assertSecondRoll frames 1 (Just 5)
     assertThirdRoll frames 1 Nothing
     where
-        frames = processRolls [4, 5]
+        Right frames = processRolls [4, 5]
 
 testFirstFrameSpareWithoutBonusBall = TestCase $ do
     assertFrameNumber frames 1
@@ -62,7 +62,7 @@ testFirstFrameSpareWithoutBonusBall = TestCase $ do
     assertSecondRoll frames 1 (Just 6)
     assertThirdRoll frames 1 Nothing
     where
-        frames = processRolls [4, 6]
+        Right frames = processRolls [4, 6]
 
 testFirstFrameSpareWithBonusBall = TestCase $ do
     assertFrameNumber frames 1
@@ -71,7 +71,7 @@ testFirstFrameSpareWithBonusBall = TestCase $ do
     assertSecondRoll frames 1 (Just 6)
     assertThirdRoll frames 1 Nothing
     where
-        frames = processRolls [4, 6, 5]
+        Right frames = processRolls [4, 6, 5]
 
 testFirstFrameStrikeWithoutBonusBalls = TestCase $ do
     assertFrameNumber frames 1
@@ -80,7 +80,7 @@ testFirstFrameStrikeWithoutBonusBalls = TestCase $ do
     assertSecondRoll frames 1 Nothing
     assertThirdRoll frames 1 Nothing
     where
-        frames = processRolls [10]
+        Right frames = processRolls [10]
 
 testFirstFrameStrikeWithFirstBonusBall = TestCase $ do
     assertFrameNumber frames 1
@@ -89,7 +89,7 @@ testFirstFrameStrikeWithFirstBonusBall = TestCase $ do
     assertSecondRoll frames 1 Nothing
     assertThirdRoll frames 1 Nothing
     where
-        frames = processRolls [10, 4]
+        Right frames = processRolls [10, 4]
 
 testFirstFrameStrikeWithBothBonusBalls = TestCase $ do
     assertFrameNumber frames 1
@@ -98,7 +98,7 @@ testFirstFrameStrikeWithBothBonusBalls = TestCase $ do
     assertSecondRoll frames 1 Nothing
     assertThirdRoll frames 1 Nothing
     where
-        frames = processRolls [10, 4, 2]
+        Right frames = processRolls [10, 4, 2]
 
 testUninterestingLastFrame = TestCase $ do
     assertFrameNumber frames 10
@@ -107,7 +107,7 @@ testUninterestingLastFrame = TestCase $ do
     assertSecondRoll frames 10 (Just 5)
     assertThirdRoll frames 10 Nothing
     where
-        frames = processRolls (replicate 18 0 ++ [4, 5])
+        Right frames = processRolls (replicate 18 0 ++ [4, 5])
 
 testLastFrameSpareWithoutBonusBall = TestCase $ do
     assertFrameNumber frames 10
@@ -116,7 +116,7 @@ testLastFrameSpareWithoutBonusBall = TestCase $ do
     assertSecondRoll frames 10 (Just 2)
     assertThirdRoll frames 10 Nothing
     where
-        frames = processRolls (replicate 18 0 ++ [8, 2])
+        Right frames = processRolls (replicate 18 0 ++ [8, 2])
 
 testLastFrameSpareWithBonusBall = TestCase $ do
     assertFrameNumber frames 10
@@ -125,7 +125,7 @@ testLastFrameSpareWithBonusBall = TestCase $ do
     assertSecondRoll frames 10 (Just 2)
     assertThirdRoll frames 10 (Just 5)
     where
-        frames = processRolls (replicate 18 0 ++ [8, 2, 5])
+        Right frames = processRolls (replicate 18 0 ++ [8, 2, 5])
 
 testLastFrameStrikeWithoutBonusBalls = TestCase $ do
     assertFrameNumber frames 10
@@ -134,7 +134,7 @@ testLastFrameStrikeWithoutBonusBalls = TestCase $ do
     assertSecondRoll frames 10 Nothing
     assertThirdRoll frames 10 Nothing
     where
-        frames = processRolls (replicate 18 0 ++ [10])
+        Right frames = processRolls (replicate 18 0 ++ [10])
 
 testLastFrameStrikeWithFirstBonusBall = TestCase $ do
     assertFrameNumber frames 10
@@ -143,7 +143,7 @@ testLastFrameStrikeWithFirstBonusBall = TestCase $ do
     assertSecondRoll frames 10 (Just 4)
     assertThirdRoll frames 10 Nothing
     where
-        frames = processRolls (replicate 18 0 ++ [10, 4])
+        Right frames = processRolls (replicate 18 0 ++ [10, 4])
 
 testLastFrameStrikeWithBothBonusBalls = TestCase $ do
     assertFrameNumber frames 10
@@ -152,7 +152,7 @@ testLastFrameStrikeWithBothBonusBalls = TestCase $ do
     assertSecondRoll frames 10 (Just 4)
     assertThirdRoll frames 10 (Just 2)
     where
-        frames = processRolls (replicate 18 0 ++ [10, 4, 2])
+        Right frames = processRolls (replicate 18 0 ++ [10, 4, 2])
 
 tests = TestList [
         TestLabel "testEmptyListOfRolls" testEmptyListOfRolls,
