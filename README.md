@@ -24,5 +24,5 @@ I am currently learning Haskell so I decided to translate [my previous attempt a
  * ~~add functions to assist with creating a new frame from an old frame?~~
  * UPDATE: neither of the above two ideas worked - finally improved it (?) by using a state machine
 * ~~Create a separate module for the <code>Frame</code> type and the <code>processRolls</code> function~~
-* add error handling e.g. rolls < 0 or > 10, two rolls in a frame that total > 10, too many rolls, etc.
- * change the signature of <code>processRolls</code> to be <code>Rolls -> Either BowlingError Frames</code> ?
+* ~~add error handling e.g. rolls < 0 or > 10, two rolls in a frame that total > 10, too many rolls, etc.~~
+ * ~~change the signature of <code>processRolls</code> to be <code>Rolls -> Either BowlingError Frames</code> ?~~
