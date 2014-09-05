@@ -29,43 +29,53 @@ prop_FrameInvariantHoldsForAllFrames rolls =
     where
         Right frames = processRolls rolls
 
--- rolls with some < 0 and/or some > 10
-prop_XXX :: Rolls -> Bool
-prop_XXX rolls =
+prop_VariousBadRollsResultInAnError :: Rolls -> Bool
+prop_VariousBadRollsResultInAnError rolls =
     isLeft br
     where
         br = processRolls rolls
 
--- rolls with some frames having a total > 10
-prop_YYY :: Rolls -> Bool
-prop_YYY rolls =
-    isLeft br
-    where
-        br = processRolls rolls
+nonStrikeValidFrameRolls = [[r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10]
+nonStrikeValidFrameRollsGen = elements nonStrikeValidFrameRolls
 
--- rolls with some extra rolls after the last frame
-prop_ZZZ :: Rolls -> Bool
-prop_ZZZ rolls =
-    isLeft br
-    where
-        br = processRolls rolls
+strikeValidFrameRollsGen = return [10]
 
-nonStrikeFrameRolls = [[r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 <= 10]
-nonStrikeFrameRollsGen = elements nonStrikeFrameRolls
+firstRollTooSmallFrameRolls = [[r1, r2] | r1 <- [(-10)..(-1)], r2 <- [0..10]]
+firstRollTooSmallFrameRollsGen = elements firstRollTooSmallFrameRolls
 
-strikeFrameRollsGen = return [10]
+firstRollTooBigFrameRolls = [[r1, r2] | r1 <- [11..20], r2 <- [0..10]]
+firstRollTooBigFrameRollsGen = elements firstRollTooBigFrameRolls
 
-frameGen = frequency [(40, nonStrikeFrameRollsGen), (60, strikeFrameRollsGen)]
+secondRollTooSmallFrameRolls = [[r1, r2] | r1 <- [0..9], r2 <- [(-10)..(-1)]]
+secondRollTooSmallFrameRollsGen = elements secondRollTooSmallFrameRolls
 
-validRollsGen :: Gen Rolls
-validRollsGen = do
-    tenFrames <- vectorOf 10 frameGen
-    twoFrames <- vectorOf 2 frameGen
+secondRollTooBigFrameRolls = [[r1, r2] | r1 <- [0..9], r2 <- [11..20]]
+secondRollTooBigFrameRollsGen = elements secondRollTooBigFrameRolls
+
+totalTooBigFrameRolls = [[r1, r2] | r1 <- [0..9], r2 <- [0..10], r1 + r2 > 10]
+totalTooBigFrameRollsGen = elements totalTooBigFrameRolls
+
+validFrameGen                   = frequency [(40, nonStrikeValidFrameRollsGen),     (60, strikeValidFrameRollsGen)]
+someFirstRollsTooSmallFrameGen  = frequency [(70, firstRollTooSmallFrameRollsGen),  (15, nonStrikeValidFrameRollsGen), (15, strikeValidFrameRollsGen)]
+someFirstRollsTooBigFrameGen    = frequency [(70, firstRollTooBigFrameRollsGen),    (15, nonStrikeValidFrameRollsGen), (15, strikeValidFrameRollsGen)]
+someSecondRollsTooSmallFrameGen = frequency [(70, secondRollTooSmallFrameRollsGen), (15, nonStrikeValidFrameRollsGen), (15, strikeValidFrameRollsGen)]
+someSecondRollsTooBigFrameGen   = frequency [(70, secondRollTooBigFrameRollsGen),   (15, nonStrikeValidFrameRollsGen), (15, strikeValidFrameRollsGen)]
+someTotalTooBigFrameGen         = frequency [(70, totalTooBigFrameRollsGen),        (15, nonStrikeValidFrameRollsGen), (15, strikeValidFrameRollsGen)]
+
+rollsGen :: Gen Rolls -> Int -> Gen Rolls
+rollsGen fg numSuperfluousBalls = do
+    tenFrames <- vectorOf 10 fg
+    bonusBallFrames <- vectorOf 2 fg
+    superfluousBallFrames <- vectorOf 2 fg
     let lastFrame = last tenFrames
-    let rolls = join tenFrames
-    let bonusBalls = join twoFrames
+    let rollsForTenFrames = join tenFrames
+    let bonusBalls = join bonusBallFrames
+    let superfluousBalls = join superfluousBallFrames
     let numBonusBallsNeeded = calculateNumBonusBallsNeeded lastFrame
-    return $ rolls ++ take numBonusBallsNeeded bonusBalls
+    return $
+        rollsForTenFrames ++
+        take numBonusBallsNeeded bonusBalls ++
+        take numSuperfluousBalls superfluousBalls
 
 calculateNumBonusBallsNeeded :: Rolls -> Int
 calculateNumBonusBallsNeeded [maxPins] = 2
@@ -73,17 +83,15 @@ calculateNumBonusBallsNeeded [r1, r2]
     | r1 + r2 == maxPins = 1
     | otherwise = 0
 
--- badTotalFrameRolls
--- badTotalFrameRollsGen
-
--- someBadRollsFrameRolls
--- someBadRollsFrameRollsGen
-
--- extraRollsGen
-
 main :: IO ()
 main = do
-    r1 <- quickCheckResult (forAll validRollsGen prop_FrameInvariantHoldsForAllFrames)
-    if all isSuccess [r1]
+    r1 <- quickCheckResult (forAll (rollsGen validFrameGen 0) prop_FrameInvariantHoldsForAllFrames)
+    r2 <- quickCheckResult (forAll (rollsGen someFirstRollsTooSmallFrameGen 0) prop_VariousBadRollsResultInAnError)
+    r3 <- quickCheckResult (forAll (rollsGen someFirstRollsTooBigFrameGen 0) prop_VariousBadRollsResultInAnError)
+    r4 <- quickCheckResult (forAll (rollsGen someSecondRollsTooSmallFrameGen 0) prop_VariousBadRollsResultInAnError)
+    r5 <- quickCheckResult (forAll (rollsGen someSecondRollsTooBigFrameGen 0) prop_VariousBadRollsResultInAnError)
+    r6 <- quickCheckResult (forAll (rollsGen someTotalTooBigFrameGen 0) prop_VariousBadRollsResultInAnError)
+    r7 <- quickCheckResult (forAll (rollsGen validFrameGen 1) prop_VariousBadRollsResultInAnError)
+    if all isSuccess [r1, r2, r3, r4, r5, r6, r7]
         then return ()
         else exitFailure
