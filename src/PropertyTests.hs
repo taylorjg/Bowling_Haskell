@@ -78,7 +78,9 @@ rollsGen fg numSuperfluousBalls = do
         take numSuperfluousBalls superfluousBalls
 
 calculateNumBonusBallsNeeded :: Rolls -> Int
-calculateNumBonusBallsNeeded [maxPins] = 2
+calculateNumBonusBallsNeeded [r1]
+    | r1 == maxPins = 2
+    | otherwise = error "a frame consisting of a single roll must be a strike!"
 calculateNumBonusBallsNeeded [r1, r2]
     | r1 + r2 == maxPins = 1
     | otherwise = 0
