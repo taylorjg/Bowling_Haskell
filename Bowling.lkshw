@@ -8,7 +8,3 @@ File paths of contained packages:
                ["Bowling.cabal"]
 Maybe file path of an active package:
                Just "Bowling.cabal"
-Maybe name of an active executable:
-               Just "Bowling"
-Version Control System configurations for packages:
-               fromList []

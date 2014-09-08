@@ -165,14 +165,10 @@ applyRollToFrame f r rt =
     if r < minPins || r > maxPins then
         (f, False, Nothing, Just $ "Invalid roll: " ++ show r)
     else
-        let
-            r1 = fromMaybe 0 $ fFirstRoll f'
-            r2 = fromMaybe 0 $ fSecondRoll f'
-        in
-            if r1 + r2 > maxPins then
-                (f, False, Nothing, Just $ "First and second rolls of frame number " ++ (show . fFrameNumber) f' ++ " have a total greater than " ++ show maxPins)
-            else
-                (f', consumed, runningTotal f', Nothing)
+        if r1 + r2 > maxPins then
+            (f, False, Nothing, Just $ "First and second rolls of frame number " ++ (show . fFrameNumber) f' ++ " have a total greater than " ++ show maxPins)
+        else
+            (f', consumed, runningTotal f', Nothing)
     where
         fs = fFrameState f
         smr = fromJust $ Map.lookup fs stateMachine
@@ -183,6 +179,8 @@ applyRollToFrame f r rt =
             fSecondRoll = (secondRollFn smr) f r,
             fNumBonusBallsNeeded = (numBonusBallsNeededFn smr) f r,
             fBonusBalls = (bonusBallsFn smr) f r}
+        r1 = fromMaybe 0 $ fFirstRoll f'
+        r2 = fromMaybe 0 $ fSecondRoll f'
         consumed = (consumedFn smr) f r
 
 processRoll :: BowlingResult  -> Roll -> BowlingResult
